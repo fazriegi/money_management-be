@@ -7,10 +7,13 @@ import (
 	"github.com/fazriegi/money_management-be/config"
 	"github.com/fazriegi/money_management-be/libs"
 	"github.com/fazriegi/money_management-be/model"
+	"github.com/jmoiron/sqlx"
 )
 
 type IRepository interface {
 	GetAssets() (result []model.Asset, err error)
+	BulkInsert(tx *sqlx.Tx, asset model.Asset) error
+	DeleteAssetByPeriod(tx *sqlx.Tx, periodCode string) error
 }
 
 type Repository struct {
@@ -24,7 +27,7 @@ func (r *Repository) GetAssets(req model.AssetRequest) (result []model.Asset, er
 	db := config.GetDatabase()
 
 	if req.Sort == nil || *req.Sort == "" {
-		order := "id ASC" // Default sorting if not provided
+		order := "order_no" // Default sorting if not provided
 		req.Sort = &order
 	}
 
@@ -52,13 +55,36 @@ func (r *Repository) GetAssets(req model.AssetRequest) (result []model.Asset, er
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan rows into structs: %w", err)
 	}
-	// for row.Next() {
-	// 	var asset model.Asset
-	// 	if err := row.Scan(&asset); err != nil {
-	// 		return nil, fmt.Errorf("failed to scan row: %w", err)
-	// 	}
-	// 	result = append(result, asset)
-	// }
 
 	return
+}
+
+func (r *Repository) BulkInsert(tx *sqlx.Tx, assets []model.Asset) error {
+	dataset := goqu.Insert("assets").Rows(assets)
+	sql, val, err := dataset.ToSQL()
+	if err != nil {
+		return fmt.Errorf("failed to build SQL query: %w", err)
+	}
+
+	_, err = tx.Exec(sql, val...)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	return nil
+}
+
+func (r *Repository) DeleteAssetByPeriod(tx *sqlx.Tx, periodCode string) error {
+	dataset := goqu.Delete("assets").Where(goqu.Ex{"period_code": periodCode})
+	sql, val, err := dataset.ToSQL()
+	if err != nil {
+		return fmt.Errorf("failed to build SQL query: %w", err)
+	}
+
+	_, err = tx.Exec(sql, val...)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	return nil
 }

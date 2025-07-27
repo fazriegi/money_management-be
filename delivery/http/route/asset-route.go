@@ -15,4 +15,5 @@ func NewAssetRoute(app *fiber.App) {
 
 	asset := app.Group("/assets")
 	asset.Get("/", controller.GetAssets)
+	asset.Put("/", controller.Update)
 }

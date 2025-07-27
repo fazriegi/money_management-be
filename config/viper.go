@@ -6,6 +6,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var viperInstance *viper.Viper
+
 func NewViper() *viper.Viper {
 	config := viper.New()
 
@@ -19,5 +21,15 @@ func NewViper() *viper.Viper {
 		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
 
+	viperInstance = config
+
 	return config
+}
+
+func GetConfigString(key string) string {
+	return viperInstance.GetString(key)
+}
+
+func GetConfigInt(key string) int {
+	return viperInstance.GetInt(key)
 }

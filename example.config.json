@@ -1,19 +1,21 @@
 {
-    "appName": "app name",
-  
-    "web": {
-      "port": 8080
-    },
-    "log": {
-      "level":6,
-      "outputFile":"/path/to/file.log"
-    },
-    "db": {
-      "host": "localhost",
-      "username": "user",
-      "password": "pass",
-      "name": "dbName",
-      "port": "5432"
-    }
+  "appName": "app name",
+
+  "web": {
+    "port": 8080
+  },
+  "log": {
+    "level": 6,
+    "outputFile": "/path/to/file.log"
+  },
+  "db": {
+    "host": "localhost",
+    "username": "user",
+    "password": "pass",
+    "name": "dbName",
+    "port": "5432"
+  },
+  "secret": {
+    "encryptionKey": "32-character-long-key"
   }
-  
+}

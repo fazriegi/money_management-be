@@ -14,6 +14,7 @@ import (
 
 type IController interface {
 	GetAssets(ctx *fiber.Ctx) error
+	Update(ctx *fiber.Ctx) error
 }
 
 type Controller struct {
@@ -57,6 +58,37 @@ func (c *Controller) GetAssets(ctx *fiber.Ctx) error {
 	}
 
 	response = c.usecase.GetAssets(reqBody)
+
+	return ctx.Status(response.Status.Code).JSON(response)
+}
+
+func (c *Controller) Update(ctx *fiber.Ctx) error {
+	var (
+		response model.Response
+		reqBody  model.InsertAssetRequest
+	)
+
+	if err := ctx.BodyParser(&reqBody); err != nil {
+		c.logger.Errorf("error parsing request body: %s", err.Error())
+		response.Status = libs.CustomResponse(http.StatusBadRequest, "error parsing request body")
+		return ctx.Status(fiber.StatusBadRequest).JSON(response)
+	}
+
+	// validate reqBody struct
+	validationErr := libs.ValidateRequest(&reqBody)
+	if len(validationErr) > 0 {
+		errResponse := map[string]any{
+			"errors": validationErr,
+		}
+
+		response.Status =
+			libs.CustomResponse(http.StatusUnprocessableEntity, "validation error")
+		response.Data = errResponse
+
+		return ctx.Status(response.Status.Code).JSON(response)
+	}
+
+	response = c.usecase.Update(&reqBody)
 
 	return ctx.Status(response.Status.Code).JSON(response)
 }
