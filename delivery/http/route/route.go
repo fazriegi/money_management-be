@@ -8,4 +8,5 @@ func NewRoute(app *fiber.App) {
 	NewAssetRoute(app)
 	NewIncomeRoute(app)
 	NewExpenseRoute(app)
+	NewLiabilityRoute(app)
 }
