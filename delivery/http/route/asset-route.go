@@ -9,9 +9,9 @@ import (
 )
 
 func NewAssetRoute(app *fiber.App) {
-	repo := repository.NewRepository()
-	usecase := usecase.NewUsecase(repo)
-	controller := controller.NewController(usecase)
+	repo := repository.NewAssetRepository()
+	usecase := usecase.NewAssetUsecase(repo)
+	controller := controller.NewAssetController(usecase)
 
 	asset := app.Group("/assets")
 	asset.Get("/", controller.GetAssets)

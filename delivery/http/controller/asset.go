@@ -12,25 +12,25 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type IController interface {
+type IAssetController interface {
 	GetAssets(ctx *fiber.Ctx) error
 	Update(ctx *fiber.Ctx) error
 }
 
-type Controller struct {
-	usecase usecase.IUsecase
+type AssetController struct {
+	usecase usecase.IAssetUsecase
 	logger  *logrus.Logger
 }
 
-func NewController(usecase usecase.IUsecase) IController {
+func NewAssetController(usecase usecase.IAssetUsecase) IAssetController {
 	logger := config.GetLogger()
-	return &Controller{
+	return &AssetController{
 		usecase,
 		logger,
 	}
 }
 
-func (c *Controller) GetAssets(ctx *fiber.Ctx) error {
+func (c *AssetController) GetAssets(ctx *fiber.Ctx) error {
 	var (
 		response model.Response
 		reqBody  model.AssetRequest
@@ -62,7 +62,7 @@ func (c *Controller) GetAssets(ctx *fiber.Ctx) error {
 	return ctx.Status(response.Status.Code).JSON(response)
 }
 
-func (c *Controller) Update(ctx *fiber.Ctx) error {
+func (c *AssetController) Update(ctx *fiber.Ctx) error {
 	var (
 		response model.Response
 		reqBody  model.InsertAssetRequest

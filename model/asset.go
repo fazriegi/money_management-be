@@ -13,12 +13,6 @@ type AssetRequest struct {
 	Search string `json:"search"`
 }
 
-// type AssetResponse struct {
-// 	ID    uuid.UUID `json:"id"`
-// 	Email string    `json:"email"`
-// 	Name  string    `json:"name"`
-// }
-
 type InsertAssetRequest struct {
 	PeriodCode string  `json:"period_code" validate:"required"`
 	Data       []Asset `json:"data"`

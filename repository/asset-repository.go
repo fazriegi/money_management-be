@@ -10,20 +10,20 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type IRepository interface {
+type IAssetRepository interface {
 	GetAssets() (result *[]model.Asset, err error)
 	BulkInsert(tx *sqlx.Tx, data *[]model.Asset) error
-	DeleteAssetByPeriod(tx *sqlx.Tx, periodCode string) error
+	DeleteByPeriod(tx *sqlx.Tx, periodCode string) error
 }
 
-type Repository struct {
+type AssetRepository struct {
 }
 
-func NewRepository() *Repository {
-	return &Repository{}
+func NewAssetRepository() *AssetRepository {
+	return &AssetRepository{}
 }
 
-func (r *Repository) GetAssets(req *model.AssetRequest) (result []model.Asset, err error) {
+func (r *AssetRepository) GetAssets(req *model.AssetRequest) (result []model.Asset, err error) {
 	db := config.GetDatabase()
 
 	if req.Sort == nil || *req.Sort == "" {
@@ -59,7 +59,7 @@ func (r *Repository) GetAssets(req *model.AssetRequest) (result []model.Asset, e
 	return
 }
 
-func (r *Repository) BulkInsert(tx *sqlx.Tx, data *[]model.Asset) error {
+func (r *AssetRepository) BulkInsert(tx *sqlx.Tx, data *[]model.Asset) error {
 	dataset := goqu.Insert("assets").Rows(*data)
 	sql, val, err := dataset.ToSQL()
 	if err != nil {
@@ -74,7 +74,7 @@ func (r *Repository) BulkInsert(tx *sqlx.Tx, data *[]model.Asset) error {
 	return nil
 }
 
-func (r *Repository) DeleteAssetByPeriod(tx *sqlx.Tx, periodCode string) error {
+func (r *AssetRepository) DeleteByPeriod(tx *sqlx.Tx, periodCode string) error {
 	dataset := goqu.Delete("assets").Where(goqu.Ex{"period_code": periodCode})
 	sql, val, err := dataset.ToSQL()
 	if err != nil {
