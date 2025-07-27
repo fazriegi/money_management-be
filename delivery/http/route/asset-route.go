@@ -8,7 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func NewUserRoute(app *fiber.App) {
+func NewAssetRoute(app *fiber.App) {
 	repo := repository.NewRepository()
 	usecase := usecase.NewUsecase(repo)
 	controller := controller.NewController(usecase)

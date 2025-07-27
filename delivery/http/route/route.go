@@ -5,5 +5,5 @@ import (
 )
 
 func NewRoute(app *fiber.App) {
-	NewUserRoute(app)
+	NewAssetRoute(app)
 }
