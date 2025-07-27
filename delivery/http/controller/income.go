@@ -12,28 +12,28 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type IController interface {
-	GetAssets(ctx *fiber.Ctx) error
+type IIncomeController interface {
+	GetList(ctx *fiber.Ctx) error
 	Update(ctx *fiber.Ctx) error
 }
 
-type Controller struct {
-	usecase usecase.IUsecase
+type IncomeController struct {
+	usecase usecase.IIncomeUsecase
 	logger  *logrus.Logger
 }
 
-func NewController(usecase usecase.IUsecase) IController {
+func NewIncomeController(usecase usecase.IIncomeUsecase) IIncomeController {
 	logger := config.GetLogger()
-	return &Controller{
+	return &IncomeController{
 		usecase,
 		logger,
 	}
 }
 
-func (c *Controller) GetAssets(ctx *fiber.Ctx) error {
+func (c *IncomeController) GetList(ctx *fiber.Ctx) error {
 	var (
 		response model.Response
-		reqBody  model.AssetRequest
+		reqBody  model.GetIncomeRequest
 	)
 
 	if err := ctx.BodyParser(&reqBody); err != nil {
@@ -57,15 +57,15 @@ func (c *Controller) GetAssets(ctx *fiber.Ctx) error {
 		return ctx.Status(response.Status.Code).JSON(response)
 	}
 
-	response = c.usecase.GetAssets(&reqBody)
+	response = c.usecase.GetList(&reqBody)
 
 	return ctx.Status(response.Status.Code).JSON(response)
 }
 
-func (c *Controller) Update(ctx *fiber.Ctx) error {
+func (c *IncomeController) Update(ctx *fiber.Ctx) error {
 	var (
 		response model.Response
-		reqBody  model.InsertAssetRequest
+		reqBody  model.UpdateIncomeRequest
 	)
 
 	if err := ctx.BodyParser(&reqBody); err != nil {

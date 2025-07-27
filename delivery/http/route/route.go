@@ -6,4 +6,5 @@ import (
 
 func NewRoute(app *fiber.App) {
 	NewAssetRoute(app)
+	NewIncomeRoute(app)
 }

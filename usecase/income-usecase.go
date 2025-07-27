@@ -12,45 +12,36 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type IUsecase interface {
-	GetAssets(req *model.AssetRequest) (resp model.Response)
-	Update(req *model.InsertAssetRequest) (resp model.Response)
+type IIncomeUsecase interface {
+	GetList(req *model.GetIncomeRequest) (resp model.Response)
+	Update(req *model.UpdateIncomeRequest) (resp model.Response)
 }
 
-type Usecase struct {
-	repository *repository.Repository
+type IncomeUsecase struct {
+	repository *repository.IncomeRepository
 	log        *logrus.Logger
 }
 
-func NewUsecase(repo *repository.Repository) IUsecase {
+func NewIncomeUsecase(repo *repository.IncomeRepository) IIncomeUsecase {
 	log := config.GetLogger()
 
-	return &Usecase{
+	return &IncomeUsecase{
 		repository: repo,
 		log:        log,
 	}
 }
 
-func (u *Usecase) GetAssets(req *model.AssetRequest) (resp model.Response) {
-	assets, err := u.repository.GetAssets(req)
+func (u *IncomeUsecase) GetList(req *model.GetIncomeRequest) (resp model.Response) {
+	listData, err := u.repository.GetList(req)
 	if err != nil {
-		u.log.Errorf("repository.GetAssets: %s", err.Error())
+		u.log.Errorf("repository.GetList: %s", err.Error())
 		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
 		return
 	}
 
-	respData := make([]model.Asset, len(assets))
-	for i, asset := range assets {
-		decAmount, err := libs.Decrypt(asset.Amount.(string))
-		if err != nil {
-			u.log.Errorf("error decrypting amount: %s", err.Error())
-			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
-			return
-		}
-
-		amount, _ := strconv.Atoi(decAmount)
-
-		decValue, err := libs.Decrypt(asset.Value.(string))
+	respData := make(model.GetIncomeResponse, len(listData))
+	for i, data := range listData {
+		decValue, err := libs.Decrypt(data.Value.(string))
 		if err != nil {
 			u.log.Errorf("error decrypting value: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
@@ -59,12 +50,12 @@ func (u *Usecase) GetAssets(req *model.AssetRequest) (resp model.Response) {
 
 		value, _ := strconv.Atoi(decValue)
 
-		respData[i] = model.Asset{
-			PeriodCode: asset.PeriodCode,
-			Name:       asset.Name,
-			Amount:     amount,
+		respData[i] = model.IncomeResponse{
+			PeriodCode: data.PeriodCode,
+			Type:       data.Type,
+			Name:       data.Name,
 			Value:      value,
-			OrderNo:    asset.OrderNo,
+			OrderNo:    data.OrderNo,
 		}
 	}
 
@@ -73,7 +64,7 @@ func (u *Usecase) GetAssets(req *model.AssetRequest) (resp model.Response) {
 	return
 }
 
-func (u *Usecase) Update(req *model.InsertAssetRequest) (resp model.Response) {
+func (u *IncomeUsecase) Update(req *model.UpdateIncomeRequest) (resp model.Response) {
 	db := config.GetDatabase()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -82,34 +73,27 @@ func (u *Usecase) Update(req *model.InsertAssetRequest) (resp model.Response) {
 		return
 	}
 
-	insertData := make([]model.Asset, 0)
-	for _, asset := range req.Data {
-		encAmount, err := libs.Encrypt(fmt.Sprintf("%0.f", asset.Amount))
-		if err != nil {
-			u.log.Errorf("error encrypting amount: %s", err.Error())
-			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
-			return
-		}
-
-		encValue, err := libs.Encrypt(fmt.Sprintf("%0.f", asset.Value))
+	insertData := make([]model.Income, 0)
+	for _, data := range req.Data {
+		encValue, err := libs.Encrypt(fmt.Sprintf("%0.f", data.Value))
 		if err != nil {
 			u.log.Errorf("error encrypting value: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
 			return
 		}
 
-		insertData = append(insertData, model.Asset{
+		insertData = append(insertData, model.Income{
 			PeriodCode: req.PeriodCode,
-			Name:       asset.Name,
-			Amount:     encAmount,
+			Type:       data.Type,
+			Name:       data.Name,
 			Value:      encValue,
-			OrderNo:    asset.OrderNo,
+			OrderNo:    data.OrderNo,
 		})
 	}
 
-	err = u.repository.DeleteAssetByPeriod(tx, req.PeriodCode)
+	err = u.repository.DeleteByPeriod(tx, req.PeriodCode)
 	if err != nil {
-		u.log.Errorf("repository.DeleteAssetByPeriod: %s", err.Error())
+		u.log.Errorf("repository.DeleteByPeriod: %s", err.Error())
 		tx.Rollback()
 		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
 		return

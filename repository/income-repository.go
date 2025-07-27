@@ -10,20 +10,20 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type IRepository interface {
-	GetAssets() (result *[]model.Asset, err error)
-	BulkInsert(tx *sqlx.Tx, data *[]model.Asset) error
-	DeleteAssetByPeriod(tx *sqlx.Tx, periodCode string) error
+type IIncomeRepository interface {
+	GetList(req *model.GetIncomeRequest) (result []model.Income, err error)
+	BulkInsert(tx *sqlx.Tx, data *[]model.Income) error
+	DeleteByPeriod(tx *sqlx.Tx, periodCode string) error
 }
 
-type Repository struct {
+type IncomeRepository struct {
 }
 
-func NewRepository() *Repository {
-	return &Repository{}
+func NewIncomeRepository() *IncomeRepository {
+	return &IncomeRepository{}
 }
 
-func (r *Repository) GetAssets(req *model.AssetRequest) (result []model.Asset, err error) {
+func (r *IncomeRepository) GetList(req *model.GetIncomeRequest) (result []model.Income, err error) {
 	db := config.GetDatabase()
 
 	if req.Sort == nil || *req.Sort == "" {
@@ -31,7 +31,7 @@ func (r *Repository) GetAssets(req *model.AssetRequest) (result []model.Asset, e
 		req.Sort = &order
 	}
 
-	dataset := goqu.From("assets")
+	dataset := goqu.From("incomes")
 
 	if req.Search != "" {
 		dataset = dataset.Where(goqu.Ex{"name": req.Search})
@@ -50,7 +50,7 @@ func (r *Repository) GetAssets(req *model.AssetRequest) (result []model.Asset, e
 	}
 	defer row.Close()
 
-	result = make([]model.Asset, 0)
+	result = make([]model.Income, 0)
 	err = libs.ScanRowsIntoStructs(row, &result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan rows into structs: %w", err)
@@ -59,8 +59,8 @@ func (r *Repository) GetAssets(req *model.AssetRequest) (result []model.Asset, e
 	return
 }
 
-func (r *Repository) BulkInsert(tx *sqlx.Tx, data *[]model.Asset) error {
-	dataset := goqu.Insert("assets").Rows(*data)
+func (r *IncomeRepository) BulkInsert(tx *sqlx.Tx, data *[]model.Income) error {
+	dataset := goqu.Insert("incomes").Rows(*data)
 	sql, val, err := dataset.ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build SQL query: %w", err)
@@ -74,8 +74,8 @@ func (r *Repository) BulkInsert(tx *sqlx.Tx, data *[]model.Asset) error {
 	return nil
 }
 
-func (r *Repository) DeleteAssetByPeriod(tx *sqlx.Tx, periodCode string) error {
-	dataset := goqu.Delete("assets").Where(goqu.Ex{"period_code": periodCode})
+func (r *IncomeRepository) DeleteByPeriod(tx *sqlx.Tx, periodCode string) error {
+	dataset := goqu.Delete("incomes").Where(goqu.Ex{"period_code": periodCode})
 	sql, val, err := dataset.ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build SQL query: %w", err)
