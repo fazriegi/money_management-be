@@ -32,8 +32,12 @@ func (r *AssetRepository) GetAssets(req *model.AssetRequest, db *sqlx.DB) (resul
 
 	dataset := dialect.From("assets")
 
+	if req.PeriodCode != "" {
+		dataset = dataset.Where(goqu.I("period_code").Eq(req.PeriodCode))
+	}
+
 	if req.Search != "" {
-		dataset = dataset.Where(goqu.Ex{"name": req.Search})
+		dataset = dataset.Where(goqu.I("name").ILike("%" + req.Search + "%"))
 	}
 
 	dataset = libs.PaginationRequest(dataset, req.PaginationRequest)
