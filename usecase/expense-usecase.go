@@ -101,12 +101,14 @@ func (u *ExpenseUsecase) Update(req *model.UpdateExpenseRequest) (resp model.Res
 		return
 	}
 
-	err = u.repository.BulkInsert(tx, &insertData)
-	if err != nil {
-		u.log.Errorf("repository.BulkInsert: %s", err.Error())
-		tx.Rollback()
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
-		return
+	if len(insertData) > 0 {
+		err = u.repository.BulkInsert(tx, &insertData)
+		if err != nil {
+			u.log.Errorf("repository.BulkInsert: %s", err.Error())
+			tx.Rollback()
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			return
+		}
 	}
 
 	if err = tx.Commit(); err != nil {
