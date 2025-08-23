@@ -36,7 +36,7 @@ func (c *LiabilityController) GetList(ctx *fiber.Ctx) error {
 		reqBody  model.GetLiabilityRequest
 	)
 
-	if err := ctx.BodyParser(&reqBody); err != nil {
+	if err := ctx.QueryParser(&reqBody); err != nil {
 		c.logger.Errorf("error parsing request body: %s", err.Error())
 		response.Status = libs.CustomResponse(http.StatusBadRequest, "error parsing request body")
 		return ctx.Status(fiber.StatusBadRequest).JSON(response)

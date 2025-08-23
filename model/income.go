@@ -18,7 +18,7 @@ type IncomeResponse struct {
 
 type GetIncomeRequest struct {
 	PaginationRequest
-	Search string `json:"search"`
+	Search string `query:"search"`
 }
 
 type GetIncomeResponse []IncomeResponse

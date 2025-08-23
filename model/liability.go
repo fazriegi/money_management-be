@@ -16,7 +16,7 @@ type LiabilityResponse struct {
 
 type GetLiabilityRequest struct {
 	PaginationRequest
-	Search string `json:"search"`
+	Search string `query:"search"`
 }
 
 type GetLiabilityResponse []LiabilityResponse
