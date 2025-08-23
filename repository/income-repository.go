@@ -4,14 +4,13 @@ import (
 	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
-	"github.com/fazriegi/money_management-be/config"
 	"github.com/fazriegi/money_management-be/libs"
 	"github.com/fazriegi/money_management-be/model"
 	"github.com/jmoiron/sqlx"
 )
 
 type IIncomeRepository interface {
-	GetList(req *model.GetIncomeRequest) (result []model.Income, err error)
+	GetList(req *model.GetIncomeRequest, db *sqlx.DB) (result []model.Income, err error)
 	BulkInsert(tx *sqlx.Tx, data *[]model.Income) error
 	DeleteByPeriod(tx *sqlx.Tx, periodCode string) error
 }
@@ -19,19 +18,19 @@ type IIncomeRepository interface {
 type IncomeRepository struct {
 }
 
-func NewIncomeRepository() *IncomeRepository {
+func NewIncomeRepository() IIncomeRepository {
 	return &IncomeRepository{}
 }
 
-func (r *IncomeRepository) GetList(req *model.GetIncomeRequest) (result []model.Income, err error) {
-	db := config.GetDatabase()
+func (r *IncomeRepository) GetList(req *model.GetIncomeRequest, db *sqlx.DB) (result []model.Income, err error) {
+	dialect := libs.GetDialect()
 
 	if req.Sort == nil || *req.Sort == "" {
 		order := "order_no" // Default sorting if not provided
 		req.Sort = &order
 	}
 
-	dataset := goqu.From("incomes")
+	dataset := dialect.From("incomes")
 
 	if req.Search != "" {
 		dataset = dataset.Where(goqu.Ex{"name": req.Search})
@@ -60,7 +59,9 @@ func (r *IncomeRepository) GetList(req *model.GetIncomeRequest) (result []model.
 }
 
 func (r *IncomeRepository) BulkInsert(tx *sqlx.Tx, data *[]model.Income) error {
-	dataset := goqu.Insert("incomes").Rows(*data)
+	dialect := libs.GetDialect()
+
+	dataset := dialect.Insert("incomes").Rows(*data)
 	sql, val, err := dataset.ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build SQL query: %w", err)
@@ -75,7 +76,9 @@ func (r *IncomeRepository) BulkInsert(tx *sqlx.Tx, data *[]model.Income) error {
 }
 
 func (r *IncomeRepository) DeleteByPeriod(tx *sqlx.Tx, periodCode string) error {
-	dataset := goqu.Delete("incomes").Where(goqu.Ex{"period_code": periodCode})
+	dialect := libs.GetDialect()
+
+	dataset := dialect.Delete("incomes").Where(goqu.Ex{"period_code": periodCode})
 	sql, val, err := dataset.ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build SQL query: %w", err)

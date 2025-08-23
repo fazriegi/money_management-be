@@ -18,11 +18,11 @@ type IAssetUsecase interface {
 }
 
 type AssetUsecase struct {
-	repository *repository.AssetRepository
+	repository repository.IAssetRepository
 	log        *logrus.Logger
 }
 
-func NewAssetUsecase(repo *repository.AssetRepository) IAssetUsecase {
+func NewAssetUsecase(repo repository.IAssetRepository) IAssetUsecase {
 	log := config.GetLogger()
 
 	return &AssetUsecase{
@@ -32,7 +32,9 @@ func NewAssetUsecase(repo *repository.AssetRepository) IAssetUsecase {
 }
 
 func (u *AssetUsecase) GetAssets(req *model.AssetRequest) (resp model.Response) {
-	listData, err := u.repository.GetAssets(req)
+	db := config.GetDatabase()
+
+	listData, err := u.repository.GetAssets(req, db)
 	if err != nil {
 		u.log.Errorf("repository.GetAssets: %s", err.Error())
 		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")

@@ -4,14 +4,13 @@ import (
 	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
-	"github.com/fazriegi/money_management-be/config"
 	"github.com/fazriegi/money_management-be/libs"
 	"github.com/fazriegi/money_management-be/model"
 	"github.com/jmoiron/sqlx"
 )
 
 type IAssetRepository interface {
-	GetAssets() (result *[]model.Asset, err error)
+	GetAssets(req *model.AssetRequest, db *sqlx.DB) ([]model.Asset, error)
 	BulkInsert(tx *sqlx.Tx, data *[]model.Asset) error
 	DeleteByPeriod(tx *sqlx.Tx, periodCode string) error
 }
@@ -19,19 +18,19 @@ type IAssetRepository interface {
 type AssetRepository struct {
 }
 
-func NewAssetRepository() *AssetRepository {
+func NewAssetRepository() IAssetRepository {
 	return &AssetRepository{}
 }
 
-func (r *AssetRepository) GetAssets(req *model.AssetRequest) (result []model.Asset, err error) {
-	db := config.GetDatabase()
+func (r *AssetRepository) GetAssets(req *model.AssetRequest, db *sqlx.DB) (result []model.Asset, err error) {
+	dialect := libs.GetDialect()
 
 	if req.Sort == nil || *req.Sort == "" {
 		order := "order_no" // Default sorting if not provided
 		req.Sort = &order
 	}
 
-	dataset := goqu.From("assets")
+	dataset := dialect.From("assets")
 
 	if req.Search != "" {
 		dataset = dataset.Where(goqu.Ex{"name": req.Search})
@@ -60,7 +59,9 @@ func (r *AssetRepository) GetAssets(req *model.AssetRequest) (result []model.Ass
 }
 
 func (r *AssetRepository) BulkInsert(tx *sqlx.Tx, data *[]model.Asset) error {
-	dataset := goqu.Insert("assets").Rows(*data)
+	dialect := libs.GetDialect()
+
+	dataset := dialect.Insert("assets").Rows(*data)
 	sql, val, err := dataset.ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build SQL query: %w", err)
@@ -75,7 +76,9 @@ func (r *AssetRepository) BulkInsert(tx *sqlx.Tx, data *[]model.Asset) error {
 }
 
 func (r *AssetRepository) DeleteByPeriod(tx *sqlx.Tx, periodCode string) error {
-	dataset := goqu.Delete("assets").Where(goqu.Ex{"period_code": periodCode})
+	dialect := libs.GetDialect()
+
+	dataset := dialect.Delete("assets").Where(goqu.Ex{"period_code": periodCode})
 	sql, val, err := dataset.ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build SQL query: %w", err)

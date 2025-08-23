@@ -18,11 +18,11 @@ type ILiabilityUsecase interface {
 }
 
 type LiabilityUsecase struct {
-	repository *repository.LiabilityRepository
+	repository repository.ILiabilityRepository
 	log        *logrus.Logger
 }
 
-func NewLiabilityUsecase(repo *repository.LiabilityRepository) ILiabilityUsecase {
+func NewLiabilityUsecase(repo repository.ILiabilityRepository) ILiabilityUsecase {
 	log := config.GetLogger()
 
 	return &LiabilityUsecase{
@@ -32,7 +32,9 @@ func NewLiabilityUsecase(repo *repository.LiabilityRepository) ILiabilityUsecase
 }
 
 func (u *LiabilityUsecase) GetList(req *model.GetLiabilityRequest) (resp model.Response) {
-	listData, err := u.repository.GetList(req)
+	db := config.GetDatabase()
+
+	listData, err := u.repository.GetList(req, db)
 	if err != nil {
 		u.log.Errorf("repository.GetList: %s", err.Error())
 		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")

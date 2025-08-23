@@ -18,11 +18,11 @@ type IIncomeUsecase interface {
 }
 
 type IncomeUsecase struct {
-	repository *repository.IncomeRepository
+	repository repository.IIncomeRepository
 	log        *logrus.Logger
 }
 
-func NewIncomeUsecase(repo *repository.IncomeRepository) IIncomeUsecase {
+func NewIncomeUsecase(repo repository.IIncomeRepository) IIncomeUsecase {
 	log := config.GetLogger()
 
 	return &IncomeUsecase{
@@ -32,7 +32,9 @@ func NewIncomeUsecase(repo *repository.IncomeRepository) IIncomeUsecase {
 }
 
 func (u *IncomeUsecase) GetList(req *model.GetIncomeRequest) (resp model.Response) {
-	listData, err := u.repository.GetList(req)
+	db := config.GetDatabase()
+
+	listData, err := u.repository.GetList(req, db)
 	if err != nil {
 		u.log.Errorf("repository.GetList: %s", err.Error())
 		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
