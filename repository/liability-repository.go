@@ -4,14 +4,13 @@ import (
 	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
-	"github.com/fazriegi/money_management-be/config"
 	"github.com/fazriegi/money_management-be/libs"
 	"github.com/fazriegi/money_management-be/model"
 	"github.com/jmoiron/sqlx"
 )
 
 type ILiabilityRepository interface {
-	GetList(req *model.GetLiabilityRequest) (result []model.Liability, err error)
+	GetList(req *model.GetLiabilityRequest, db *sqlx.DB) (result []model.Liability, err error)
 	BulkInsert(tx *sqlx.Tx, data *[]model.Liability) error
 	DeleteByPeriod(tx *sqlx.Tx, periodCode string) error
 }
@@ -19,22 +18,26 @@ type ILiabilityRepository interface {
 type LiabilityRepository struct {
 }
 
-func NewLiabilityRepository() *LiabilityRepository {
+func NewLiabilityRepository() ILiabilityRepository {
 	return &LiabilityRepository{}
 }
 
-func (r *LiabilityRepository) GetList(req *model.GetLiabilityRequest) (result []model.Liability, err error) {
-	db := config.GetDatabase()
+func (r *LiabilityRepository) GetList(req *model.GetLiabilityRequest, db *sqlx.DB) (result []model.Liability, err error) {
+	dialect := libs.GetDialect()
 
 	if req.Sort == nil || *req.Sort == "" {
 		order := "order_no" // Default sorting if not provided
 		req.Sort = &order
 	}
 
-	dataset := goqu.From("liabilities")
+	dataset := dialect.From("liabilities")
 
 	if req.Search != "" {
-		dataset = dataset.Where(goqu.Ex{"name": req.Search})
+		dataset = dataset.Where(goqu.I("name").ILike("%" + req.Search + "%"))
+	}
+
+	if req.PeriodCode != "" {
+		dataset = dataset.Where(goqu.I("period_code").Eq(req.PeriodCode))
 	}
 
 	dataset = libs.PaginationRequest(dataset, req.PaginationRequest)
@@ -60,7 +63,9 @@ func (r *LiabilityRepository) GetList(req *model.GetLiabilityRequest) (result []
 }
 
 func (r *LiabilityRepository) BulkInsert(tx *sqlx.Tx, data *[]model.Liability) error {
-	dataset := goqu.Insert("liabilities").Rows(*data)
+	dialect := libs.GetDialect()
+
+	dataset := dialect.Insert("liabilities").Rows(*data)
 	sql, val, err := dataset.ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build SQL query: %w", err)
@@ -75,7 +80,9 @@ func (r *LiabilityRepository) BulkInsert(tx *sqlx.Tx, data *[]model.Liability) e
 }
 
 func (r *LiabilityRepository) DeleteByPeriod(tx *sqlx.Tx, periodCode string) error {
-	dataset := goqu.Delete("liabilities").Where(goqu.Ex{"period_code": periodCode})
+	dialect := libs.GetDialect()
+
+	dataset := dialect.Delete("liabilities").Where(goqu.Ex{"period_code": periodCode})
 	sql, val, err := dataset.ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build SQL query: %w", err)

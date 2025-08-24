@@ -18,11 +18,11 @@ type IAssetUsecase interface {
 }
 
 type AssetUsecase struct {
-	repository *repository.AssetRepository
+	repository repository.IAssetRepository
 	log        *logrus.Logger
 }
 
-func NewAssetUsecase(repo *repository.AssetRepository) IAssetUsecase {
+func NewAssetUsecase(repo repository.IAssetRepository) IAssetUsecase {
 	log := config.GetLogger()
 
 	return &AssetUsecase{
@@ -32,7 +32,9 @@ func NewAssetUsecase(repo *repository.AssetRepository) IAssetUsecase {
 }
 
 func (u *AssetUsecase) GetAssets(req *model.AssetRequest) (resp model.Response) {
-	listData, err := u.repository.GetAssets(req)
+	db := config.GetDatabase()
+
+	listData, err := u.repository.GetAssets(req, db)
 	if err != nil {
 		u.log.Errorf("repository.GetAssets: %s", err.Error())
 		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
@@ -115,12 +117,14 @@ func (u *AssetUsecase) Update(req *model.InsertAssetRequest) (resp model.Respons
 		return
 	}
 
-	err = u.repository.BulkInsert(tx, &insertData)
-	if err != nil {
-		u.log.Errorf("repository.BulkInsert: %s", err.Error())
-		tx.Rollback()
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
-		return
+	if len(insertData) > 0 {
+		err = u.repository.BulkInsert(tx, &insertData)
+		if err != nil {
+			u.log.Errorf("repository.BulkInsert: %s", err.Error())
+			tx.Rollback()
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			return
+		}
 	}
 
 	if err = tx.Commit(); err != nil {

@@ -10,10 +10,11 @@ type Asset struct {
 
 type AssetRequest struct {
 	PaginationRequest
-	Search string `json:"search"`
+	Search     string `query:"search"`
+	PeriodCode string `query:"period_code"`
 }
 
 type InsertAssetRequest struct {
 	PeriodCode string  `json:"period_code" validate:"required"`
-	Data       []Asset `json:"data"`
+	Data       []Asset `json:"data" validate:"required"`
 }

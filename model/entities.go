@@ -13,9 +13,9 @@ type Status struct {
 }
 
 type PaginationRequest struct {
-	Page  *uint   `json:"page"`
-	Limit *uint   `json:"limit"`
-	Sort  *string `json:"sort"`
+	Page  *uint   `query:"page"`
+	Limit *uint   `query:"limit"`
+	Sort  *string `query:"sort"`
 }
 
 type PaginationResponse struct {

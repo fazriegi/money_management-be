@@ -18,11 +18,11 @@ type IIncomeUsecase interface {
 }
 
 type IncomeUsecase struct {
-	repository *repository.IncomeRepository
+	repository repository.IIncomeRepository
 	log        *logrus.Logger
 }
 
-func NewIncomeUsecase(repo *repository.IncomeRepository) IIncomeUsecase {
+func NewIncomeUsecase(repo repository.IIncomeRepository) IIncomeUsecase {
 	log := config.GetLogger()
 
 	return &IncomeUsecase{
@@ -32,7 +32,9 @@ func NewIncomeUsecase(repo *repository.IncomeRepository) IIncomeUsecase {
 }
 
 func (u *IncomeUsecase) GetList(req *model.GetIncomeRequest) (resp model.Response) {
-	listData, err := u.repository.GetList(req)
+	db := config.GetDatabase()
+
+	listData, err := u.repository.GetList(req, db)
 	if err != nil {
 		u.log.Errorf("repository.GetList: %s", err.Error())
 		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
@@ -99,12 +101,14 @@ func (u *IncomeUsecase) Update(req *model.UpdateIncomeRequest) (resp model.Respo
 		return
 	}
 
-	err = u.repository.BulkInsert(tx, &insertData)
-	if err != nil {
-		u.log.Errorf("repository.BulkInsert: %s", err.Error())
-		tx.Rollback()
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
-		return
+	if len(insertData) > 0 {
+		err = u.repository.BulkInsert(tx, &insertData)
+		if err != nil {
+			u.log.Errorf("repository.BulkInsert: %s", err.Error())
+			tx.Rollback()
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			return
+		}
 	}
 
 	if err = tx.Commit(); err != nil {

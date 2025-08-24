@@ -18,7 +18,8 @@ type ExpenseResponse struct {
 
 type GetExpenseRequest struct {
 	PaginationRequest
-	Search string `json:"search"`
+	Search     string `query:"search"`
+	PeriodCode string `query:"period_code"`
 }
 
 type GetExpenseResponse []ExpenseResponse

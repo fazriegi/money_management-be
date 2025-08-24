@@ -18,11 +18,11 @@ type IExpenseUsecase interface {
 }
 
 type ExpenseUsecase struct {
-	repository *repository.ExpenseRepository
+	repository repository.IExpenseRepository
 	log        *logrus.Logger
 }
 
-func NewExpenseUsecase(repo *repository.ExpenseRepository) IExpenseUsecase {
+func NewExpenseUsecase(repo repository.IExpenseRepository) IExpenseUsecase {
 	log := config.GetLogger()
 
 	return &ExpenseUsecase{
@@ -32,7 +32,9 @@ func NewExpenseUsecase(repo *repository.ExpenseRepository) IExpenseUsecase {
 }
 
 func (u *ExpenseUsecase) GetList(req *model.GetExpenseRequest) (resp model.Response) {
-	listData, err := u.repository.GetList(req)
+	db := config.GetDatabase()
+
+	listData, err := u.repository.GetList(req, db)
 	if err != nil {
 		u.log.Errorf("repository.GetList: %s", err.Error())
 		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
@@ -99,12 +101,14 @@ func (u *ExpenseUsecase) Update(req *model.UpdateExpenseRequest) (resp model.Res
 		return
 	}
 
-	err = u.repository.BulkInsert(tx, &insertData)
-	if err != nil {
-		u.log.Errorf("repository.BulkInsert: %s", err.Error())
-		tx.Rollback()
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
-		return
+	if len(insertData) > 0 {
+		err = u.repository.BulkInsert(tx, &insertData)
+		if err != nil {
+			u.log.Errorf("repository.BulkInsert: %s", err.Error())
+			tx.Rollback()
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			return
+		}
 	}
 
 	if err = tx.Commit(); err != nil {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
 )
 
@@ -18,8 +18,8 @@ func NewDatabase(viper *viper.Viper) {
 	name := viper.GetString("db.name")
 	port := viper.GetInt32("db.port")
 
-	dbDriver := "postgres"
-	dbSource := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable",
+	dbDriver := "mysql"
+	dbSource := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true&charset=utf8mb4&loc=Local",
 		username,
 		password,
 		host,

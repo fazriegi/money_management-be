@@ -18,11 +18,11 @@ type ILiabilityUsecase interface {
 }
 
 type LiabilityUsecase struct {
-	repository *repository.LiabilityRepository
+	repository repository.ILiabilityRepository
 	log        *logrus.Logger
 }
 
-func NewLiabilityUsecase(repo *repository.LiabilityRepository) ILiabilityUsecase {
+func NewLiabilityUsecase(repo repository.ILiabilityRepository) ILiabilityUsecase {
 	log := config.GetLogger()
 
 	return &LiabilityUsecase{
@@ -32,7 +32,9 @@ func NewLiabilityUsecase(repo *repository.LiabilityRepository) ILiabilityUsecase
 }
 
 func (u *LiabilityUsecase) GetList(req *model.GetLiabilityRequest) (resp model.Response) {
-	listData, err := u.repository.GetList(req)
+	db := config.GetDatabase()
+
+	listData, err := u.repository.GetList(req, db)
 	if err != nil {
 		u.log.Errorf("repository.GetList: %s", err.Error())
 		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
@@ -97,12 +99,14 @@ func (u *LiabilityUsecase) Update(req *model.UpdateLiabilityRequest) (resp model
 		return
 	}
 
-	err = u.repository.BulkInsert(tx, &insertData)
-	if err != nil {
-		u.log.Errorf("repository.BulkInsert: %s", err.Error())
-		tx.Rollback()
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
-		return
+	if len(insertData) > 0 {
+		err = u.repository.BulkInsert(tx, &insertData)
+		if err != nil {
+			u.log.Errorf("repository.BulkInsert: %s", err.Error())
+			tx.Rollback()
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			return
+		}
 	}
 
 	if err = tx.Commit(); err != nil {

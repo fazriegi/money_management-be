@@ -9,6 +9,7 @@ import (
 	"github.com/fazriegi/money_management-be/delivery/http/route"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func main() {
@@ -18,6 +19,12 @@ func main() {
 	defer file.Close()
 
 	app := fiber.New()
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+	}))
 
 	app.Use(middleware.LogMiddleware())
 	port := viperConfig.GetInt("web.port")
