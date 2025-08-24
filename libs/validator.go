@@ -16,7 +16,7 @@ func ValidateRequest(data any) []ValidationErrResponse {
 	var validationErrors []ValidationErrResponse
 
 	validate := validator.New()
-	validate.RegisterValidation("password", Password) // register custom validator
+	validate.RegisterValidation("password", password) // register custom validator
 
 	err := validate.Struct(data)
 	if err != nil {
@@ -33,7 +33,7 @@ func ValidateRequest(data any) []ValidationErrResponse {
 	return validationErrors
 }
 
-func Password(fl validator.FieldLevel) bool {
+func password(fl validator.FieldLevel) bool {
 	password := fl.Field().String()
 
 	if password != "" {

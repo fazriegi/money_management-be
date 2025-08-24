@@ -7,6 +7,7 @@ import (
 	"github.com/fazriegi/money_management-be/config"
 	"github.com/fazriegi/money_management-be/delivery/http/middleware"
 	"github.com/fazriegi/money_management-be/delivery/http/route"
+	"github.com/fazriegi/money_management-be/libs"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -15,6 +16,7 @@ import (
 func main() {
 	viperConfig := config.NewViper()
 	config.NewDatabase(viperConfig)
+	jwt := libs.InitJWT(viperConfig)
 	file := config.NewLogger(viperConfig)
 	defer file.Close()
 
@@ -28,7 +30,7 @@ func main() {
 
 	app.Use(middleware.LogMiddleware())
 	port := viperConfig.GetInt("web.port")
-	route.NewRoute(app)
+	route.NewRoute(app, jwt)
 
 	log.Fatal(app.Listen(fmt.Sprintf(":%d", port)))
 }
