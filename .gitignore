@@ -2,3 +2,6 @@ config.json
 log/
 *.log
 *.tmp
+tmp/
+.air.toml
+bin/

@@ -33,7 +33,11 @@ func (r *LiabilityRepository) GetList(req *model.GetLiabilityRequest, db *sqlx.D
 	dataset := dialect.From("liabilities")
 
 	if req.Search != "" {
-		dataset = dataset.Where(goqu.Ex{"name": req.Search})
+		dataset = dataset.Where(goqu.I("name").ILike("%" + req.Search + "%"))
+	}
+
+	if req.PeriodCode != "" {
+		dataset = dataset.Where(goqu.I("period_code").Eq(req.PeriodCode))
 	}
 
 	dataset = libs.PaginationRequest(dataset, req.PaginationRequest)

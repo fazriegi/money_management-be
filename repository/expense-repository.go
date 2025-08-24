@@ -33,7 +33,11 @@ func (r *ExpenseRepository) GetList(req *model.GetExpenseRequest, db *sqlx.DB) (
 	dataset := dialect.From("expenses")
 
 	if req.Search != "" {
-		dataset = dataset.Where(goqu.Ex{"name": req.Search})
+		dataset = dataset.Where(goqu.I("name").ILike("%" + req.Search + "%"))
+	}
+
+	if req.PeriodCode != "" {
+		dataset = dataset.Where(goqu.I("period_code").Eq(req.PeriodCode))
 	}
 
 	dataset = libs.PaginationRequest(dataset, req.PaginationRequest)
