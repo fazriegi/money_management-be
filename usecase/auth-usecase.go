@@ -114,6 +114,10 @@ func (u *AuthUsecase) Login(props *model.LoginRequest) (resp model.Response) {
 
 	data := map[string]any{
 		"token": token,
+		"user": model.UserResponse{
+			Name:     existingUser.Name,
+			Username: existingUser.Username,
+		},
 	}
 
 	return model.Response{
