@@ -13,8 +13,8 @@ import (
 )
 
 type IExpenseUsecase interface {
-	GetList(req *model.GetExpenseRequest) (resp model.Response)
-	Update(req *model.UpdateExpenseRequest) (resp model.Response)
+	GetList(user *model.User, req *model.GetExpenseRequest) (resp model.Response)
+	Update(user *model.User, req *model.UpdateExpenseRequest) (resp model.Response)
 }
 
 type ExpenseUsecase struct {
@@ -31,10 +31,10 @@ func NewExpenseUsecase(repo repository.IExpenseRepository) IExpenseUsecase {
 	}
 }
 
-func (u *ExpenseUsecase) GetList(req *model.GetExpenseRequest) (resp model.Response) {
+func (u *ExpenseUsecase) GetList(user *model.User, req *model.GetExpenseRequest) (resp model.Response) {
 	db := config.GetDatabase()
 
-	listData, err := u.repository.GetList(req, db)
+	listData, err := u.repository.GetList(req, user.ID, db)
 	if err != nil {
 		u.log.Errorf("repository.GetList: %s", err.Error())
 		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
@@ -66,7 +66,7 @@ func (u *ExpenseUsecase) GetList(req *model.GetExpenseRequest) (resp model.Respo
 	return
 }
 
-func (u *ExpenseUsecase) Update(req *model.UpdateExpenseRequest) (resp model.Response) {
+func (u *ExpenseUsecase) Update(user *model.User, req *model.UpdateExpenseRequest) (resp model.Response) {
 	db := config.GetDatabase()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -90,10 +90,11 @@ func (u *ExpenseUsecase) Update(req *model.UpdateExpenseRequest) (resp model.Res
 			Value:       encValue,
 			OrderNo:     data.OrderNo,
 			LiabilityID: data.LiabilityID,
+			UserID:      user.ID,
 		})
 	}
 
-	err = u.repository.DeleteByPeriod(tx, req.PeriodCode)
+	err = u.repository.DeleteByPeriod(tx, req.PeriodCode, user.ID)
 	if err != nil {
 		u.log.Errorf("repository.DeleteByPeriod: %s", err.Error())
 		tx.Rollback()

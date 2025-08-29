@@ -13,8 +13,8 @@ import (
 )
 
 type ILiabilityUsecase interface {
-	GetList(req *model.GetLiabilityRequest) (resp model.Response)
-	Update(req *model.UpdateLiabilityRequest) (resp model.Response)
+	GetList(user *model.User, req *model.GetLiabilityRequest) (resp model.Response)
+	Update(user *model.User, req *model.UpdateLiabilityRequest) (resp model.Response)
 }
 
 type LiabilityUsecase struct {
@@ -31,10 +31,10 @@ func NewLiabilityUsecase(repo repository.ILiabilityRepository) ILiabilityUsecase
 	}
 }
 
-func (u *LiabilityUsecase) GetList(req *model.GetLiabilityRequest) (resp model.Response) {
+func (u *LiabilityUsecase) GetList(user *model.User, req *model.GetLiabilityRequest) (resp model.Response) {
 	db := config.GetDatabase()
 
-	listData, err := u.repository.GetList(req, db)
+	listData, err := u.repository.GetList(req, user.ID, db)
 	if err != nil {
 		u.log.Errorf("repository.GetList: %s", err.Error())
 		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
@@ -65,7 +65,7 @@ func (u *LiabilityUsecase) GetList(req *model.GetLiabilityRequest) (resp model.R
 	return
 }
 
-func (u *LiabilityUsecase) Update(req *model.UpdateLiabilityRequest) (resp model.Response) {
+func (u *LiabilityUsecase) Update(user *model.User, req *model.UpdateLiabilityRequest) (resp model.Response) {
 	db := config.GetDatabase()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -88,10 +88,11 @@ func (u *LiabilityUsecase) Update(req *model.UpdateLiabilityRequest) (resp model
 			Name:       data.Name,
 			Value:      encValue,
 			OrderNo:    data.OrderNo,
+			UserID:     user.ID,
 		})
 	}
 
-	err = u.repository.DeleteByPeriod(tx, req.PeriodCode)
+	err = u.repository.DeleteByPeriod(tx, req.PeriodCode, user.ID)
 	if err != nil {
 		u.log.Errorf("repository.DeleteByPeriod: %s", err.Error())
 		tx.Rollback()

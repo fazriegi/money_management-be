@@ -10,9 +10,9 @@ import (
 )
 
 type IAssetRepository interface {
-	GetAssets(req *model.AssetRequest, db *sqlx.DB) ([]model.Asset, error)
+	GetAssets(req *model.AssetRequest, userID uint, db *sqlx.DB) ([]model.Asset, error)
 	BulkInsert(tx *sqlx.Tx, data *[]model.Asset) error
-	DeleteByPeriod(tx *sqlx.Tx, periodCode string) error
+	DeleteByPeriod(tx *sqlx.Tx, periodCode string, userID uint) error
 }
 
 type AssetRepository struct {
@@ -22,7 +22,7 @@ func NewAssetRepository() IAssetRepository {
 	return &AssetRepository{}
 }
 
-func (r *AssetRepository) GetAssets(req *model.AssetRequest, db *sqlx.DB) (result []model.Asset, err error) {
+func (r *AssetRepository) GetAssets(req *model.AssetRequest, userID uint, db *sqlx.DB) (result []model.Asset, err error) {
 	dialect := libs.GetDialect()
 
 	if req.Sort == nil || *req.Sort == "" {
@@ -30,7 +30,7 @@ func (r *AssetRepository) GetAssets(req *model.AssetRequest, db *sqlx.DB) (resul
 		req.Sort = &order
 	}
 
-	dataset := dialect.From("assets")
+	dataset := dialect.From("assets").Where(goqu.I("user_id").Eq(userID))
 
 	if req.PeriodCode != "" {
 		dataset = dataset.Where(goqu.I("period_code").Eq(req.PeriodCode))
@@ -79,10 +79,10 @@ func (r *AssetRepository) BulkInsert(tx *sqlx.Tx, data *[]model.Asset) error {
 	return nil
 }
 
-func (r *AssetRepository) DeleteByPeriod(tx *sqlx.Tx, periodCode string) error {
+func (r *AssetRepository) DeleteByPeriod(tx *sqlx.Tx, periodCode string, userID uint) error {
 	dialect := libs.GetDialect()
 
-	dataset := dialect.Delete("assets").Where(goqu.Ex{"period_code": periodCode})
+	dataset := dialect.Delete("assets").Where(goqu.I("period_code").Eq(periodCode), goqu.I("user_id").Eq(userID))
 	sql, val, err := dataset.ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build SQL query: %w", err)

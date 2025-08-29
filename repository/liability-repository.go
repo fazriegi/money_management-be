@@ -10,9 +10,9 @@ import (
 )
 
 type ILiabilityRepository interface {
-	GetList(req *model.GetLiabilityRequest, db *sqlx.DB) (result []model.Liability, err error)
+	GetList(req *model.GetLiabilityRequest, userID uint, db *sqlx.DB) (result []model.Liability, err error)
 	BulkInsert(tx *sqlx.Tx, data *[]model.Liability) error
-	DeleteByPeriod(tx *sqlx.Tx, periodCode string) error
+	DeleteByPeriod(tx *sqlx.Tx, periodCode string, userID uint) error
 }
 
 type LiabilityRepository struct {
@@ -22,7 +22,7 @@ func NewLiabilityRepository() ILiabilityRepository {
 	return &LiabilityRepository{}
 }
 
-func (r *LiabilityRepository) GetList(req *model.GetLiabilityRequest, db *sqlx.DB) (result []model.Liability, err error) {
+func (r *LiabilityRepository) GetList(req *model.GetLiabilityRequest, userID uint, db *sqlx.DB) (result []model.Liability, err error) {
 	dialect := libs.GetDialect()
 
 	if req.Sort == nil || *req.Sort == "" {
@@ -30,7 +30,7 @@ func (r *LiabilityRepository) GetList(req *model.GetLiabilityRequest, db *sqlx.D
 		req.Sort = &order
 	}
 
-	dataset := dialect.From("liabilities")
+	dataset := dialect.From("liabilities").Where(goqu.I("user_id").Eq(userID))
 
 	if req.Search != "" {
 		dataset = dataset.Where(goqu.I("name").ILike("%" + req.Search + "%"))
@@ -79,10 +79,10 @@ func (r *LiabilityRepository) BulkInsert(tx *sqlx.Tx, data *[]model.Liability) e
 	return nil
 }
 
-func (r *LiabilityRepository) DeleteByPeriod(tx *sqlx.Tx, periodCode string) error {
+func (r *LiabilityRepository) DeleteByPeriod(tx *sqlx.Tx, periodCode string, userID uint) error {
 	dialect := libs.GetDialect()
 
-	dataset := dialect.Delete("liabilities").Where(goqu.Ex{"period_code": periodCode})
+	dataset := dialect.Delete("liabilities").Where(goqu.I("period_code").Eq(periodCode), goqu.I("user_id").Eq(userID))
 	sql, val, err := dataset.ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build SQL query: %w", err)
