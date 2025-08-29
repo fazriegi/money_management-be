@@ -34,6 +34,7 @@ func (c *LiabilityController) GetList(ctx *fiber.Ctx) error {
 	var (
 		response model.Response
 		reqBody  model.GetLiabilityRequest
+		user     = ctx.Locals("user").(model.User)
 	)
 
 	if err := ctx.QueryParser(&reqBody); err != nil {
@@ -57,7 +58,7 @@ func (c *LiabilityController) GetList(ctx *fiber.Ctx) error {
 		return ctx.Status(response.Status.Code).JSON(response)
 	}
 
-	response = c.usecase.GetList(&reqBody)
+	response = c.usecase.GetList(&user, &reqBody)
 
 	return ctx.Status(response.Status.Code).JSON(response)
 }
@@ -66,6 +67,7 @@ func (c *LiabilityController) Update(ctx *fiber.Ctx) error {
 	var (
 		response model.Response
 		reqBody  model.UpdateLiabilityRequest
+		user     = ctx.Locals("user").(model.User)
 	)
 
 	if err := ctx.BodyParser(&reqBody); err != nil {
@@ -88,7 +90,7 @@ func (c *LiabilityController) Update(ctx *fiber.Ctx) error {
 		return ctx.Status(response.Status.Code).JSON(response)
 	}
 
-	response = c.usecase.Update(&reqBody)
+	response = c.usecase.Update(&user, &reqBody)
 
 	return ctx.Status(response.Status.Code).JSON(response)
 }

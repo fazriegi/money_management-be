@@ -6,9 +6,9 @@ import (
 )
 
 func NewRoute(app *fiber.App, jwt *libs.JWT) {
-	NewAssetRoute(app)
-	NewIncomeRoute(app)
-	NewExpenseRoute(app)
-	NewLiabilityRoute(app)
+	NewAssetRoute(app, jwt)
+	NewIncomeRoute(app, jwt)
+	NewExpenseRoute(app, jwt)
+	NewLiabilityRoute(app, jwt)
 	NewAuthRoute(app, jwt)
 }

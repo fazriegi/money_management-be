@@ -13,8 +13,8 @@ import (
 )
 
 type IIncomeUsecase interface {
-	GetList(req *model.GetIncomeRequest) (resp model.Response)
-	Update(req *model.UpdateIncomeRequest) (resp model.Response)
+	GetList(user *model.User, req *model.GetIncomeRequest) (resp model.Response)
+	Update(user *model.User, req *model.UpdateIncomeRequest) (resp model.Response)
 }
 
 type IncomeUsecase struct {
@@ -31,10 +31,10 @@ func NewIncomeUsecase(repo repository.IIncomeRepository) IIncomeUsecase {
 	}
 }
 
-func (u *IncomeUsecase) GetList(req *model.GetIncomeRequest) (resp model.Response) {
+func (u *IncomeUsecase) GetList(user *model.User, req *model.GetIncomeRequest) (resp model.Response) {
 	db := config.GetDatabase()
 
-	listData, err := u.repository.GetList(req, db)
+	listData, err := u.repository.GetList(req, user.ID, db)
 	if err != nil {
 		u.log.Errorf("repository.GetList: %s", err.Error())
 		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
@@ -66,7 +66,7 @@ func (u *IncomeUsecase) GetList(req *model.GetIncomeRequest) (resp model.Respons
 	return
 }
 
-func (u *IncomeUsecase) Update(req *model.UpdateIncomeRequest) (resp model.Response) {
+func (u *IncomeUsecase) Update(user *model.User, req *model.UpdateIncomeRequest) (resp model.Response) {
 	db := config.GetDatabase()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -90,10 +90,11 @@ func (u *IncomeUsecase) Update(req *model.UpdateIncomeRequest) (resp model.Respo
 			Name:       data.Name,
 			Value:      encValue,
 			OrderNo:    data.OrderNo,
+			UserID:     user.ID,
 		})
 	}
 
-	err = u.repository.DeleteByPeriod(tx, req.PeriodCode)
+	err = u.repository.DeleteByPeriod(tx, req.PeriodCode, user.ID)
 	if err != nil {
 		u.log.Errorf("repository.DeleteByPeriod: %s", err.Error())
 		tx.Rollback()

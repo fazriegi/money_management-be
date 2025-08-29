@@ -6,6 +6,7 @@ type Expense struct {
 	Value       interface{} `db:"value" json:"value"`
 	OrderNo     int         `db:"order_no" json:"order_no"`
 	LiabilityID *int        `db:"liability_id" json:"liability_id"`
+	UserID      uint        `db:"user_id"`
 }
 
 type ExpenseResponse struct {

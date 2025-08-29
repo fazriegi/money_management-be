@@ -6,6 +6,7 @@ type Asset struct {
 	Amount     interface{} `db:"amount" json:"amount"`
 	Value      interface{} `db:"value" json:"value"`
 	OrderNo    int         `db:"order_no" json:"order_no"`
+	UserID     uint        `db:"user_id"`
 }
 
 type AssetRequest struct {

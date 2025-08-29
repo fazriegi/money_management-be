@@ -5,6 +5,7 @@ type Liability struct {
 	Name       string      `db:"name" json:"name"`
 	Value      interface{} `db:"value" json:"value"`
 	OrderNo    int         `db:"order_no" json:"order_no"`
+	UserID     uint        `db:"user_id"`
 }
 
 type LiabilityResponse struct {

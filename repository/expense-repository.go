@@ -10,9 +10,9 @@ import (
 )
 
 type IExpenseRepository interface {
-	GetList(req *model.GetExpenseRequest, db *sqlx.DB) (result []model.Expense, err error)
+	GetList(req *model.GetExpenseRequest, userID uint, db *sqlx.DB) (result []model.Expense, err error)
 	BulkInsert(tx *sqlx.Tx, data *[]model.Expense) error
-	DeleteByPeriod(tx *sqlx.Tx, periodCode string) error
+	DeleteByPeriod(tx *sqlx.Tx, periodCode string, userID uint) error
 }
 
 type ExpenseRepository struct {
@@ -22,7 +22,7 @@ func NewExpenseRepository() IExpenseRepository {
 	return &ExpenseRepository{}
 }
 
-func (r *ExpenseRepository) GetList(req *model.GetExpenseRequest, db *sqlx.DB) (result []model.Expense, err error) {
+func (r *ExpenseRepository) GetList(req *model.GetExpenseRequest, userID uint, db *sqlx.DB) (result []model.Expense, err error) {
 	dialect := libs.GetDialect()
 
 	if req.Sort == nil || *req.Sort == "" {
@@ -30,7 +30,7 @@ func (r *ExpenseRepository) GetList(req *model.GetExpenseRequest, db *sqlx.DB) (
 		req.Sort = &order
 	}
 
-	dataset := dialect.From("expenses")
+	dataset := dialect.From("expenses").Where(goqu.I("user_id").Eq(userID))
 
 	if req.Search != "" {
 		dataset = dataset.Where(goqu.I("name").ILike("%" + req.Search + "%"))
@@ -79,10 +79,10 @@ func (r *ExpenseRepository) BulkInsert(tx *sqlx.Tx, data *[]model.Expense) error
 	return nil
 }
 
-func (r *ExpenseRepository) DeleteByPeriod(tx *sqlx.Tx, periodCode string) error {
+func (r *ExpenseRepository) DeleteByPeriod(tx *sqlx.Tx, periodCode string, userID uint) error {
 	dialect := libs.GetDialect()
 
-	dataset := dialect.Delete("expenses").Where(goqu.Ex{"period_code": periodCode})
+	dataset := dialect.Delete("expenses").Where(goqu.I("period_code").Eq(periodCode), goqu.I("user_id").Eq(userID))
 	sql, val, err := dataset.ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build SQL query: %w", err)
