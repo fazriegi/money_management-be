@@ -12,7 +12,8 @@ import (
 
 func NewExpenseRoute(app *fiber.App, jwt *libs.JWT) {
 	repo := repository.NewExpenseRepository()
-	usecase := usecase.NewExpenseUsecase(repo)
+	liabilityRepo := repository.NewLiabilityRepository()
+	usecase := usecase.NewExpenseUsecase(repo, liabilityRepo)
 	controller := controller.NewExpenseController(usecase)
 
 	asset := app.Group("/expenses")

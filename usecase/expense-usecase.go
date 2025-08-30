@@ -18,16 +18,18 @@ type IExpenseUsecase interface {
 }
 
 type ExpenseUsecase struct {
-	repository repository.IExpenseRepository
-	log        *logrus.Logger
+	repository    repository.IExpenseRepository
+	liabilityRepo repository.ILiabilityRepository
+	log           *logrus.Logger
 }
 
-func NewExpenseUsecase(repo repository.IExpenseRepository) IExpenseUsecase {
+func NewExpenseUsecase(repo repository.IExpenseRepository, liabilityRepo repository.ILiabilityRepository) IExpenseUsecase {
 	log := config.GetLogger()
 
 	return &ExpenseUsecase{
-		repository: repo,
-		log:        log,
+		repository:    repo,
+		log:           log,
+		liabilityRepo: liabilityRepo,
 	}
 }
 
@@ -92,6 +94,92 @@ func (u *ExpenseUsecase) Update(user *model.User, req *model.UpdateExpenseReques
 			LiabilityID: data.LiabilityID,
 			UserID:      user.ID,
 		})
+
+		if data.LiabilityID != nil {
+			liability, err := u.liabilityRepo.GetByID(*data.LiabilityID, user.ID, db)
+			if err != nil {
+				u.log.Errorf("liabilityRepo.GetByID: %s", err.Error())
+				tx.Rollback()
+				resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+				return
+			}
+
+			oldValue := liability.Value.([]uint8)
+			decValue, err := libs.Decrypt(string(oldValue))
+			if err != nil {
+				u.log.Errorf("error decrypting value: %s", err.Error())
+				resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+				return
+			}
+
+			oldNominal, err := strconv.ParseFloat(decValue, 64)
+			if err != nil {
+				u.log.Errorf("error convert nominal: %s", err.Error())
+				resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+				return
+			}
+
+			newValue := oldNominal - data.Value.(float64)
+
+			encValue, err := libs.Encrypt(fmt.Sprintf("%0.f", newValue))
+			if err != nil {
+				u.log.Errorf("error encrypting value: %s", err.Error())
+				resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+				return
+			}
+
+			err = u.liabilityRepo.UpdateByID(tx, *data.LiabilityID, user.ID, map[string]any{"value": encValue})
+			if err != nil {
+				u.log.Errorf("liabilityRepo.UpdateByID: %s", err.Error())
+				tx.Rollback()
+				resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+				return
+			}
+		}
+	}
+
+	for _, deletedData := range req.Delete {
+		if deletedData.LiabilityID != nil {
+			liability, err := u.liabilityRepo.GetByID(*deletedData.LiabilityID, user.ID, db)
+			if err != nil {
+				u.log.Errorf("liabilityRepo.GetByID: %s", err.Error())
+				tx.Rollback()
+				resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+				return
+			}
+
+			oldValue := liability.Value.([]uint8)
+			decValue, err := libs.Decrypt(string(oldValue))
+			if err != nil {
+				u.log.Errorf("error decrypting value: %s", err.Error())
+				resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+				return
+			}
+
+			oldNominal, err := strconv.ParseFloat(decValue, 64)
+			if err != nil {
+				u.log.Errorf("error convert nominal: %s", err.Error())
+				resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+				return
+			}
+
+			newValue := oldNominal + deletedData.Value.(float64)
+
+			encValue, err := libs.Encrypt(fmt.Sprintf("%0.f", newValue))
+			if err != nil {
+				u.log.Errorf("error encrypting value: %s", err.Error())
+				resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+				return
+			}
+
+			err = u.liabilityRepo.UpdateByID(tx, *deletedData.LiabilityID, user.ID, map[string]any{"value": encValue})
+			if err != nil {
+				u.log.Errorf("liabilityRepo.UpdateByID: %s", err.Error())
+				tx.Rollback()
+				resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+				return
+			}
+		}
 	}
 
 	err = u.repository.DeleteByPeriod(tx, req.PeriodCode, user.ID)

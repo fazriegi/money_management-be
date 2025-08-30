@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
+	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/fazriegi/money_management-be/libs"
 	"github.com/fazriegi/money_management-be/model"
 	"github.com/jmoiron/sqlx"
@@ -13,6 +14,8 @@ type ILiabilityRepository interface {
 	GetList(req *model.GetLiabilityRequest, userID uint, db *sqlx.DB) (result []model.Liability, err error)
 	BulkInsert(tx *sqlx.Tx, data *[]model.Liability) error
 	DeleteByPeriod(tx *sqlx.Tx, periodCode string, userID uint) error
+	UpdateByID(tx *sqlx.Tx, id, userID uint, data map[string]any) error
+	GetByID(id, userID uint, db *sqlx.DB) (result model.Liability, err error)
 }
 
 type LiabilityRepository struct {
@@ -83,6 +86,72 @@ func (r *LiabilityRepository) DeleteByPeriod(tx *sqlx.Tx, periodCode string, use
 	dialect := libs.GetDialect()
 
 	dataset := dialect.Delete("liabilities").Where(goqu.I("period_code").Eq(periodCode), goqu.I("user_id").Eq(userID))
+	sql, val, err := dataset.ToSQL()
+	if err != nil {
+		return fmt.Errorf("failed to build SQL query: %w", err)
+	}
+
+	_, err = tx.Exec(sql, val...)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	return nil
+}
+
+func (r *LiabilityRepository) GetByID(id, userID uint, db *sqlx.DB) (result model.Liability, err error) {
+	dialect := libs.GetDialect()
+
+	dataset := dialect.From("liabilities").
+		Select(
+			goqu.I("id"),
+			goqu.I("period_code"),
+			goqu.I("name"),
+			goqu.I("value"),
+			goqu.I("order_no"),
+		).
+		Where(
+			goqu.I("id").Eq(id),
+			goqu.I("user_id").Eq(userID),
+		)
+
+	query, val, err := dataset.ToSQL()
+	if err != nil {
+		return result, fmt.Errorf("failed to build SQL query: %w", err)
+	}
+
+	err = db.Get(&result, query, val...)
+	if err != nil {
+		return result, err
+	}
+
+	return
+}
+
+func (r *LiabilityRepository) UpdateByID(tx *sqlx.Tx, id, userID uint, data map[string]any) error {
+	dialect := libs.GetDialect()
+	selectQ, selectV, err := dialect.From("liabilities").
+		Where(
+			goqu.I("id").Eq(id),
+			goqu.I("user_id").Eq(userID),
+		).
+		ForUpdate(exp.Wait).
+		ToSQL()
+
+	if err != nil {
+		return fmt.Errorf("failed to build SQL query: %w", err)
+	}
+
+	_, err = tx.Exec(selectQ, selectV...)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	dataset := dialect.Update("liabilities").Set(data).Where(
+		goqu.I("id").Eq(id),
+		goqu.I("user_id").Eq(userID),
+	)
+
 	sql, val, err := dataset.ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build SQL query: %w", err)
