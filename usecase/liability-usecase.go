@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/fazriegi/money_management-be/config"
+	"github.com/fazriegi/money_management-be/constant"
 	"github.com/fazriegi/money_management-be/libs"
 	"github.com/fazriegi/money_management-be/model"
 	"github.com/fazriegi/money_management-be/repository"
@@ -37,7 +38,7 @@ func (u *LiabilityUsecase) GetList(user *model.User, req *model.GetLiabilityRequ
 	listData, err := u.repository.GetList(req, user.ID, db)
 	if err != nil {
 		u.log.Errorf("repository.GetList: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 		return
 	}
 
@@ -46,7 +47,7 @@ func (u *LiabilityUsecase) GetList(user *model.User, req *model.GetLiabilityRequ
 		decValue, err := libs.Decrypt(data.Value.(string))
 		if err != nil {
 			u.log.Errorf("error decrypting value: %s", err.Error())
-			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
 
@@ -71,33 +72,49 @@ func (u *LiabilityUsecase) Update(user *model.User, req *model.UpdateLiabilityRe
 	tx, err := db.Beginx()
 	if err != nil {
 		u.log.Errorf("error begin tx: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 		return
 	}
+	defer tx.Rollback()
 
+	keepID := []uint{}
 	insertData := make([]model.Liability, 0)
 	for _, data := range req.Data {
 		encValue, err := libs.Encrypt(fmt.Sprintf("%0.f", data.Value))
 		if err != nil {
 			u.log.Errorf("error encrypting value: %s", err.Error())
-			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
 
-		insertData = append(insertData, model.Liability{
-			PeriodCode: req.PeriodCode,
-			Name:       data.Name,
-			Value:      encValue,
-			OrderNo:    data.OrderNo,
-			UserID:     user.ID,
-		})
+		if data.ID != 0 {
+			keepID = append(keepID, data.ID)
+			err = u.repository.UpdateByID(tx, data.ID, user.ID, map[string]any{
+				"period_code": req.PeriodCode,
+				"name":        data.Name,
+				"value":       encValue,
+				"order_no":    data.OrderNo,
+			})
+			if err != nil {
+				u.log.Errorf("repository.UpdateByID: %s", err.Error())
+				resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
+				return
+			}
+		} else {
+			insertData = append(insertData, model.Liability{
+				PeriodCode: req.PeriodCode,
+				Name:       data.Name,
+				Value:      encValue,
+				OrderNo:    data.OrderNo,
+				UserID:     user.ID,
+			})
+		}
 	}
 
-	err = u.repository.DeleteByPeriod(tx, req.PeriodCode, user.ID)
+	err = u.repository.DeleteExcept(tx, keepID, req.PeriodCode, user.ID)
 	if err != nil {
-		u.log.Errorf("repository.DeleteByPeriod: %s", err.Error())
-		tx.Rollback()
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+		u.log.Errorf("repository.DeleteExcept: %s", err.Error())
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 		return
 	}
 
@@ -105,15 +122,14 @@ func (u *LiabilityUsecase) Update(user *model.User, req *model.UpdateLiabilityRe
 		err = u.repository.BulkInsert(tx, &insertData)
 		if err != nil {
 			u.log.Errorf("repository.BulkInsert: %s", err.Error())
-			tx.Rollback()
-			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
 		u.log.Errorf("error committing tx: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 		return
 	}
 
