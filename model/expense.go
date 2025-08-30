@@ -1,6 +1,7 @@
 package model
 
 type Expense struct {
+	ID          uint        `db:"id" json:"id"`
 	PeriodCode  string      `db:"period_code" json:"period_code"`
 	Name        string      `db:"name" json:"name"`
 	Value       interface{} `db:"value" json:"value"`
