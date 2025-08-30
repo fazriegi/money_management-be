@@ -40,7 +40,7 @@ func (u *ExpenseUsecase) GetList(user *model.User, req *model.GetExpenseRequest)
 	listData, err := u.repository.GetList(req, user.ID, db)
 	if err != nil {
 		u.log.Errorf("repository.GetList: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 		return
 	}
 
@@ -49,7 +49,7 @@ func (u *ExpenseUsecase) GetList(user *model.User, req *model.GetExpenseRequest)
 		decValue, err := libs.Decrypt(data.Value.(string))
 		if err != nil {
 			u.log.Errorf("error decrypting value: %s", err.Error())
-			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
 
