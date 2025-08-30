@@ -53,6 +53,7 @@ func (u *LiabilityUsecase) GetList(user *model.User, req *model.GetLiabilityRequ
 		value, _ := strconv.Atoi(decValue)
 
 		respData[i] = model.LiabilityResponse{
+			ID:         data.ID,
 			PeriodCode: data.PeriodCode,
 			Name:       data.Name,
 			Value:      value,
