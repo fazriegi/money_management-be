@@ -33,7 +33,7 @@ func NewAssetController(usecase usecase.IAssetUsecase) IAssetController {
 func (c *AssetController) GetAssets(ctx *fiber.Ctx) error {
 	var (
 		response model.Response
-		reqBody  model.AssetRequest
+		reqBody  model.GetAssetRequest
 		user     = ctx.Locals("user").(model.User)
 	)
 

@@ -14,7 +14,7 @@ import (
 )
 
 type IAssetUsecase interface {
-	GetAssets(user *model.User, req *model.AssetRequest) (resp model.Response)
+	GetAssets(user *model.User, req *model.GetAssetRequest) (resp model.Response)
 	Update(user *model.User, req *model.InsertAssetRequest) (resp model.Response)
 }
 
@@ -32,7 +32,7 @@ func NewAssetUsecase(repo repository.IAssetRepository) IAssetUsecase {
 	}
 }
 
-func (u *AssetUsecase) GetAssets(user *model.User, req *model.AssetRequest) (resp model.Response) {
+func (u *AssetUsecase) GetAssets(user *model.User, req *model.GetAssetRequest) (resp model.Response) {
 	db := config.GetDatabase()
 
 	listData, err := u.repository.GetAssets(req, user.ID, db)
@@ -42,9 +42,9 @@ func (u *AssetUsecase) GetAssets(user *model.User, req *model.AssetRequest) (res
 		return
 	}
 
-	respData := make([]model.Asset, len(listData))
+	respData := make([]model.AssetResponse, len(listData))
 	for i, data := range listData {
-		decAmount, err := libs.Decrypt(data.Amount.(string))
+		decAmount, err := libs.Decrypt(data.Amount)
 		if err != nil {
 			u.log.Errorf("error decrypting amount: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
@@ -53,7 +53,7 @@ func (u *AssetUsecase) GetAssets(user *model.User, req *model.AssetRequest) (res
 
 		amount, _ := strconv.Atoi(decAmount)
 
-		decValue, err := libs.Decrypt(data.Value.(string))
+		decValue, err := libs.Decrypt(data.Value)
 		if err != nil {
 			u.log.Errorf("error decrypting value: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
@@ -62,7 +62,8 @@ func (u *AssetUsecase) GetAssets(user *model.User, req *model.AssetRequest) (res
 
 		value, _ := strconv.Atoi(decValue)
 
-		respData[i] = model.Asset{
+		respData[i] = model.AssetResponse{
+			ID:         data.ID,
 			PeriodCode: data.PeriodCode,
 			Name:       data.Name,
 			Amount:     amount,
