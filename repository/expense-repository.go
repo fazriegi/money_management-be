@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
+	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/fazriegi/money_management-be/libs"
 	"github.com/fazriegi/money_management-be/model"
 	"github.com/jmoiron/sqlx"
@@ -13,6 +14,7 @@ type IExpenseRepository interface {
 	GetList(req *model.GetExpenseRequest, userID uint, db *sqlx.DB) (result []model.Expense, err error)
 	BulkInsert(tx *sqlx.Tx, data *[]model.Expense) error
 	DeleteByPeriod(tx *sqlx.Tx, periodCode string, userID uint) error
+	GetListForUpdate(periodCode string, userID uint, tx *sqlx.Tx) (result []model.Expense, err error)
 }
 
 type ExpenseRepository struct {
@@ -94,4 +96,34 @@ func (r *ExpenseRepository) DeleteByPeriod(tx *sqlx.Tx, periodCode string, userI
 	}
 
 	return nil
+}
+
+func (r *ExpenseRepository) GetListForUpdate(periodCode string, userID uint, tx *sqlx.Tx) (result []model.Expense, err error) {
+	dialect := libs.GetDialect()
+
+	dataset := dialect.From("expenses").
+		Where(
+			goqu.I("period_code").Eq(periodCode),
+			goqu.I("user_id").Eq(userID),
+		).
+		ForUpdate(exp.Wait)
+
+	sql, val, err := dataset.ToSQL()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build SQL query: %w", err)
+	}
+
+	row, err := tx.Queryx(sql, val...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+	defer row.Close()
+
+	result = make([]model.Expense, 0)
+	err = libs.ScanRowsIntoStructs(row, &result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan rows into structs: %w", err)
+	}
+
+	return
 }

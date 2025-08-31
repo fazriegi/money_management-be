@@ -10,7 +10,7 @@ import (
 )
 
 type IAssetRepository interface {
-	GetAssets(req *model.AssetRequest, userID uint, db *sqlx.DB) ([]model.Asset, error)
+	GetAssets(req *model.GetAssetRequest, userID uint, db *sqlx.DB) ([]model.Asset, error)
 	BulkInsert(tx *sqlx.Tx, data *[]model.Asset) error
 	DeleteByPeriod(tx *sqlx.Tx, periodCode string, userID uint) error
 }
@@ -22,7 +22,7 @@ func NewAssetRepository() IAssetRepository {
 	return &AssetRepository{}
 }
 
-func (r *AssetRepository) GetAssets(req *model.AssetRequest, userID uint, db *sqlx.DB) (result []model.Asset, err error) {
+func (r *AssetRepository) GetAssets(req *model.GetAssetRequest, userID uint, db *sqlx.DB) (result []model.Asset, err error) {
 	dialect := libs.GetDialect()
 
 	if req.Sort == nil || *req.Sort == "" {

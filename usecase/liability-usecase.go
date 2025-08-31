@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/fazriegi/money_management-be/config"
+	"github.com/fazriegi/money_management-be/constant"
 	"github.com/fazriegi/money_management-be/libs"
 	"github.com/fazriegi/money_management-be/model"
 	"github.com/fazriegi/money_management-be/repository"
@@ -15,6 +16,7 @@ import (
 type ILiabilityUsecase interface {
 	GetList(user *model.User, req *model.GetLiabilityRequest) (resp model.Response)
 	Update(user *model.User, req *model.UpdateLiabilityRequest) (resp model.Response)
+	ValidateDelete(user *model.User, req *model.ValidateDeleteRequest) (resp model.Response)
 }
 
 type LiabilityUsecase struct {
@@ -37,26 +39,36 @@ func (u *LiabilityUsecase) GetList(user *model.User, req *model.GetLiabilityRequ
 	listData, err := u.repository.GetList(req, user.ID, db)
 	if err != nil {
 		u.log.Errorf("repository.GetList: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 		return
 	}
 
 	respData := make(model.GetLiabilityResponse, len(listData))
 	for i, data := range listData {
-		decValue, err := libs.Decrypt(data.Value.(string))
+		decValue, err := libs.Decrypt(data.Value)
 		if err != nil {
 			u.log.Errorf("error decrypting value: %s", err.Error())
-			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
+			return
+		}
+		fmt.Println("S", data.Installment)
+		decInstallment, err := libs.Decrypt(data.Installment)
+		if err != nil {
+			u.log.Errorf("error decrypting installment: %s", err.Error())
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
 
 		value, _ := strconv.Atoi(decValue)
+		installment, _ := strconv.Atoi(decInstallment)
 
 		respData[i] = model.LiabilityResponse{
-			PeriodCode: data.PeriodCode,
-			Name:       data.Name,
-			Value:      value,
-			OrderNo:    data.OrderNo,
+			ID:          data.ID,
+			PeriodCode:  data.PeriodCode,
+			Name:        data.Name,
+			Value:       value,
+			Installment: installment,
+			OrderNo:     data.OrderNo,
 		}
 	}
 
@@ -70,33 +82,58 @@ func (u *LiabilityUsecase) Update(user *model.User, req *model.UpdateLiabilityRe
 	tx, err := db.Beginx()
 	if err != nil {
 		u.log.Errorf("error begin tx: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 		return
 	}
+	defer tx.Rollback()
 
+	keepID := []uint{}
 	insertData := make([]model.Liability, 0)
 	for _, data := range req.Data {
 		encValue, err := libs.Encrypt(fmt.Sprintf("%0.f", data.Value))
 		if err != nil {
 			u.log.Errorf("error encrypting value: %s", err.Error())
-			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
 
-		insertData = append(insertData, model.Liability{
-			PeriodCode: req.PeriodCode,
-			Name:       data.Name,
-			Value:      encValue,
-			OrderNo:    data.OrderNo,
-			UserID:     user.ID,
-		})
+		encInstallment, err := libs.Encrypt(fmt.Sprintf("%0.f", data.Installment))
+		if err != nil {
+			u.log.Errorf("error encrypting installment: %s", err.Error())
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
+			return
+		}
+
+		if data.ID != 0 {
+			keepID = append(keepID, data.ID)
+			err = u.repository.UpdateByID(tx, data.ID, user.ID, map[string]any{
+				"period_code": req.PeriodCode,
+				"name":        data.Name,
+				"value":       encValue,
+				"installment": encInstallment,
+				"order_no":    data.OrderNo,
+			})
+			if err != nil {
+				u.log.Errorf("repository.UpdateByID: %s", err.Error())
+				resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
+				return
+			}
+		} else {
+			insertData = append(insertData, model.Liability{
+				PeriodCode:  req.PeriodCode,
+				Name:        data.Name,
+				Value:       encValue,
+				Installment: encInstallment,
+				OrderNo:     data.OrderNo,
+				UserID:      user.ID,
+			})
+		}
 	}
 
-	err = u.repository.DeleteByPeriod(tx, req.PeriodCode, user.ID)
+	err = u.repository.DeleteExcept(tx, keepID, req.PeriodCode, user.ID)
 	if err != nil {
-		u.log.Errorf("repository.DeleteByPeriod: %s", err.Error())
-		tx.Rollback()
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+		u.log.Errorf("repository.DeleteExcept: %s", err.Error())
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 		return
 	}
 
@@ -104,19 +141,36 @@ func (u *LiabilityUsecase) Update(user *model.User, req *model.UpdateLiabilityRe
 		err = u.repository.BulkInsert(tx, &insertData)
 		if err != nil {
 			u.log.Errorf("repository.BulkInsert: %s", err.Error())
-			tx.Rollback()
-			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
 		u.log.Errorf("error committing tx: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 		return
 	}
 
 	resp.Status = libs.CustomResponse(http.StatusOK, "success")
+
+	return
+}
+
+func (u *LiabilityUsecase) ValidateDelete(user *model.User, req *model.ValidateDeleteRequest) (resp model.Response) {
+	db := config.GetDatabase()
+
+	used, err := u.repository.CheckUsedByExpense(req.ID, db)
+	if err != nil {
+		u.log.Errorf("repository.CheckUsedByExpense: %s", err.Error())
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
+		return
+	}
+
+	resp.Status = libs.CustomResponse(http.StatusOK, "success")
+	resp.Data = map[string]any{
+		"is_safe": !used,
+	}
 
 	return
 }

@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/fazriegi/money_management-be/config"
+	"github.com/fazriegi/money_management-be/constant"
 	"github.com/fazriegi/money_management-be/libs"
 	"github.com/fazriegi/money_management-be/model"
 	"github.com/fazriegi/money_management-be/repository"
@@ -37,7 +38,7 @@ func (u *IncomeUsecase) GetList(user *model.User, req *model.GetIncomeRequest) (
 	listData, err := u.repository.GetList(req, user.ID, db)
 	if err != nil {
 		u.log.Errorf("repository.GetList: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 		return
 	}
 
@@ -46,7 +47,7 @@ func (u *IncomeUsecase) GetList(user *model.User, req *model.GetIncomeRequest) (
 		decValue, err := libs.Decrypt(data.Value.(string))
 		if err != nil {
 			u.log.Errorf("error decrypting value: %s", err.Error())
-			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
 
@@ -71,16 +72,17 @@ func (u *IncomeUsecase) Update(user *model.User, req *model.UpdateIncomeRequest)
 	tx, err := db.Beginx()
 	if err != nil {
 		u.log.Errorf("error begin tx: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 		return
 	}
+	defer tx.Rollback()
 
 	insertData := make([]model.Income, 0)
 	for _, data := range req.Data {
 		encValue, err := libs.Encrypt(fmt.Sprintf("%0.f", data.Value))
 		if err != nil {
 			u.log.Errorf("error encrypting value: %s", err.Error())
-			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
 
@@ -97,8 +99,7 @@ func (u *IncomeUsecase) Update(user *model.User, req *model.UpdateIncomeRequest)
 	err = u.repository.DeleteByPeriod(tx, req.PeriodCode, user.ID)
 	if err != nil {
 		u.log.Errorf("repository.DeleteByPeriod: %s", err.Error())
-		tx.Rollback()
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 		return
 	}
 
@@ -106,15 +107,14 @@ func (u *IncomeUsecase) Update(user *model.User, req *model.UpdateIncomeRequest)
 		err = u.repository.BulkInsert(tx, &insertData)
 		if err != nil {
 			u.log.Errorf("repository.BulkInsert: %s", err.Error())
-			tx.Rollback()
-			resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
 		u.log.Errorf("error committing tx: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, "unexpected error occured")
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 		return
 	}
 

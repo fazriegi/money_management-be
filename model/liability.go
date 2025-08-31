@@ -1,18 +1,31 @@
 package model
 
 type Liability struct {
-	PeriodCode string      `db:"period_code" json:"period_code"`
-	Name       string      `db:"name" json:"name"`
-	Value      interface{} `db:"value" json:"value"`
-	OrderNo    int         `db:"order_no" json:"order_no"`
-	UserID     uint        `db:"user_id"`
+	ID          uint   `db:"id"`
+	PeriodCode  string `db:"period_code"`
+	Name        string `db:"name"`
+	Value       string `db:"value"`
+	Installment string `db:"installment"`
+	OrderNo     int    `db:"order_no"`
+	UserID      uint   `db:"user_id"`
+}
+
+type LiabilityRequest struct {
+	ID          uint        `json:"id"`
+	PeriodCode  string      `json:"period_code"`
+	Name        string      `json:"name"`
+	Value       interface{} `json:"value"`
+	Installment interface{} `json:"installment"`
+	OrderNo     int         `json:"order_no"`
 }
 
 type LiabilityResponse struct {
-	PeriodCode string `json:"period_code"`
-	Name       string `json:"name"`
-	Value      int    `json:"value"`
-	OrderNo    int    `json:"order_no"`
+	ID          uint   `json:"id"`
+	PeriodCode  string `json:"period_code"`
+	Name        string `json:"name"`
+	Value       int    `json:"value"`
+	Installment int    `json:"installment"`
+	OrderNo     int    `json:"order_no"`
 }
 
 type GetLiabilityRequest struct {
@@ -24,6 +37,10 @@ type GetLiabilityRequest struct {
 type GetLiabilityResponse []LiabilityResponse
 
 type UpdateLiabilityRequest struct {
-	PeriodCode string      `json:"period_code" validate:"required"`
-	Data       []Liability `json:"data"`
+	PeriodCode string             `json:"period_code" validate:"required"`
+	Data       []LiabilityRequest `json:"data"`
+}
+
+type ValidateDeleteRequest struct {
+	ID uint `query:"id"`
 }

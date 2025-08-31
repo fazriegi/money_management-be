@@ -33,13 +33,13 @@ func NewAssetController(usecase usecase.IAssetUsecase) IAssetController {
 func (c *AssetController) GetAssets(ctx *fiber.Ctx) error {
 	var (
 		response model.Response
-		reqBody  model.AssetRequest
+		reqBody  model.GetAssetRequest
 		user     = ctx.Locals("user").(model.User)
 	)
 
 	if err := ctx.QueryParser(&reqBody); err != nil {
-		c.logger.Errorf("error parsing request body: %s", err.Error())
-		response.Status = libs.CustomResponse(http.StatusBadRequest, "error parsing request body")
+		c.logger.Errorf("error parsing request query param: %s", err.Error())
+		response.Status = libs.CustomResponse(http.StatusBadRequest, "error parsing request query param")
 		return ctx.Status(fiber.StatusBadRequest).JSON(response)
 	}
 

@@ -18,4 +18,5 @@ func NewLiabilityRoute(app *fiber.App, jwt *libs.JWT) {
 	asset := app.Group("/liabilities")
 	asset.Get("/", middleware.Authentication(jwt), controller.GetList)
 	asset.Put("/", middleware.Authentication(jwt), controller.Update)
+	asset.Get("/validate-delete", middleware.Authentication(jwt), controller.ValidateDelete)
 }
