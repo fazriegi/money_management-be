@@ -16,6 +16,7 @@ import (
 type ILiabilityUsecase interface {
 	GetList(user *model.User, req *model.GetLiabilityRequest) (resp model.Response)
 	Update(user *model.User, req *model.UpdateLiabilityRequest) (resp model.Response)
+	ValidateDelete(user *model.User, req *model.ValidateDeleteRequest) (resp model.Response)
 }
 
 type LiabilityUsecase struct {
@@ -134,6 +135,24 @@ func (u *LiabilityUsecase) Update(user *model.User, req *model.UpdateLiabilityRe
 	}
 
 	resp.Status = libs.CustomResponse(http.StatusOK, "success")
+
+	return
+}
+
+func (u *LiabilityUsecase) ValidateDelete(user *model.User, req *model.ValidateDeleteRequest) (resp model.Response) {
+	db := config.GetDatabase()
+
+	used, err := u.repository.CheckUsedByExpense(req.ID, db)
+	if err != nil {
+		u.log.Errorf("repository.CheckUsedByExpense: %s", err.Error())
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
+		return
+	}
+
+	resp.Status = libs.CustomResponse(http.StatusOK, "success")
+	resp.Data = map[string]any{
+		"is_safe": !used,
+	}
 
 	return
 }

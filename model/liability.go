@@ -29,3 +29,7 @@ type UpdateLiabilityRequest struct {
 	PeriodCode string      `json:"period_code" validate:"required"`
 	Data       []Liability `json:"data"`
 }
+
+type ValidateDeleteRequest struct {
+	ID uint `query:"id"`
+}

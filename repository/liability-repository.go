@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
@@ -17,6 +19,7 @@ type ILiabilityRepository interface {
 	DeleteExcept(tx *sqlx.Tx, keepId []uint, periodCode string, userID uint) error
 	UpdateByID(tx *sqlx.Tx, id, userID uint, data map[string]any) error
 	GetByID(id, userID uint, db *sqlx.DB) (result model.Liability, err error)
+	CheckUsedByExpense(id uint, db *sqlx.DB) (bool, error)
 }
 
 type LiabilityRepository struct {
@@ -190,4 +193,34 @@ func (r *LiabilityRepository) DeleteExcept(tx *sqlx.Tx, keepId []uint, periodCod
 	}
 
 	return nil
+}
+
+func (r *LiabilityRepository) CheckUsedByExpense(id uint, db *sqlx.DB) (bool, error) {
+	dialect := libs.GetDialect()
+
+	dataset := dialect.From("expenses").
+		Select(
+			goqu.I("id"),
+		).
+		Where(
+			goqu.I("liability_id").Eq(id),
+		).Limit(1)
+
+	query, val, err := dataset.ToSQL()
+	if err != nil {
+		return false, fmt.Errorf("failed to build SQL query: %w", err)
+	}
+
+	exist := 0
+	err = db.Get(&exist, query, val...)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return false, err
+	}
+	fmt.Println("E", exist)
+
+	if exist != 0 {
+		return true, nil
+	}
+
+	return false, nil
 }

@@ -15,6 +15,7 @@ import (
 type ILiabilityController interface {
 	GetList(ctx *fiber.Ctx) error
 	Update(ctx *fiber.Ctx) error
+	ValidateDelete(ctx *fiber.Ctx) error
 }
 
 type LiabilityController struct {
@@ -91,6 +92,39 @@ func (c *LiabilityController) Update(ctx *fiber.Ctx) error {
 	}
 
 	response = c.usecase.Update(&user, &reqBody)
+
+	return ctx.Status(response.Status.Code).JSON(response)
+}
+
+func (c *LiabilityController) ValidateDelete(ctx *fiber.Ctx) error {
+	var (
+		response model.Response
+		reqBody  model.ValidateDeleteRequest
+		user     = ctx.Locals("user").(model.User)
+	)
+
+	if err := ctx.QueryParser(&reqBody); err != nil {
+		c.logger.Errorf("error parsing request query: %s", err.Error())
+		response.Status = libs.CustomResponse(http.StatusBadRequest, "error parsing request query")
+		return ctx.Status(fiber.StatusBadRequest).JSON(response)
+	}
+
+	// validate reqBody struct
+	validationErr := libs.ValidateRequest(&reqBody)
+	// if there is an error
+	if len(validationErr) > 0 {
+		errResponse := map[string]any{
+			"errors": validationErr,
+		}
+
+		response.Status =
+			libs.CustomResponse(http.StatusUnprocessableEntity, "validation error")
+		response.Data = errResponse
+
+		return ctx.Status(response.Status.Code).JSON(response)
+	}
+
+	response = c.usecase.ValidateDelete(&user, &reqBody)
 
 	return ctx.Status(response.Status.Code).JSON(response)
 }
