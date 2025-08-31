@@ -216,7 +216,6 @@ func (r *LiabilityRepository) CheckUsedByExpense(id uint, db *sqlx.DB) (bool, er
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return false, err
 	}
-	fmt.Println("E", exist)
 
 	if exist != 0 {
 		return true, nil

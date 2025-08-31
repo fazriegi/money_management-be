@@ -51,7 +51,7 @@ func (u *LiabilityUsecase) GetList(user *model.User, req *model.GetLiabilityRequ
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
-		fmt.Println("S", data.Installment)
+
 		decInstallment, err := libs.Decrypt(data.Installment)
 		if err != nil {
 			u.log.Errorf("error decrypting installment: %s", err.Error())
