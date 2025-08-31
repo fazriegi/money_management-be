@@ -39,8 +39,8 @@ func (c *LiabilityController) GetList(ctx *fiber.Ctx) error {
 	)
 
 	if err := ctx.QueryParser(&reqBody); err != nil {
-		c.logger.Errorf("error parsing request body: %s", err.Error())
-		response.Status = libs.CustomResponse(http.StatusBadRequest, "error parsing request body")
+		c.logger.Errorf("error parsing request query param: %s", err.Error())
+		response.Status = libs.CustomResponse(http.StatusBadRequest, "error parsing request query param")
 		return ctx.Status(fiber.StatusBadRequest).JSON(response)
 	}
 
@@ -104,8 +104,8 @@ func (c *LiabilityController) ValidateDelete(ctx *fiber.Ctx) error {
 	)
 
 	if err := ctx.QueryParser(&reqBody); err != nil {
-		c.logger.Errorf("error parsing request query: %s", err.Error())
-		response.Status = libs.CustomResponse(http.StatusBadRequest, "error parsing request query")
+		c.logger.Errorf("error parsing request query param: %s", err.Error())
+		response.Status = libs.CustomResponse(http.StatusBadRequest, "error parsing request query param")
 		return ctx.Status(fiber.StatusBadRequest).JSON(response)
 	}
 
