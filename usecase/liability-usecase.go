@@ -45,21 +45,30 @@ func (u *LiabilityUsecase) GetList(user *model.User, req *model.GetLiabilityRequ
 
 	respData := make(model.GetLiabilityResponse, len(listData))
 	for i, data := range listData {
-		decValue, err := libs.Decrypt(data.Value.(string))
+		decValue, err := libs.Decrypt(data.Value)
 		if err != nil {
 			u.log.Errorf("error decrypting value: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
+		fmt.Println("S", data.Installment)
+		decInstallment, err := libs.Decrypt(data.Installment)
+		if err != nil {
+			u.log.Errorf("error decrypting installment: %s", err.Error())
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
+			return
+		}
 
 		value, _ := strconv.Atoi(decValue)
+		installment, _ := strconv.Atoi(decInstallment)
 
 		respData[i] = model.LiabilityResponse{
-			ID:         data.ID,
-			PeriodCode: data.PeriodCode,
-			Name:       data.Name,
-			Value:      value,
-			OrderNo:    data.OrderNo,
+			ID:          data.ID,
+			PeriodCode:  data.PeriodCode,
+			Name:        data.Name,
+			Value:       value,
+			Installment: installment,
+			OrderNo:     data.OrderNo,
 		}
 	}
 
@@ -88,12 +97,20 @@ func (u *LiabilityUsecase) Update(user *model.User, req *model.UpdateLiabilityRe
 			return
 		}
 
+		encInstallment, err := libs.Encrypt(fmt.Sprintf("%0.f", data.Installment))
+		if err != nil {
+			u.log.Errorf("error encrypting installment: %s", err.Error())
+			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
+			return
+		}
+
 		if data.ID != 0 {
 			keepID = append(keepID, data.ID)
 			err = u.repository.UpdateByID(tx, data.ID, user.ID, map[string]any{
 				"period_code": req.PeriodCode,
 				"name":        data.Name,
 				"value":       encValue,
+				"installment": encInstallment,
 				"order_no":    data.OrderNo,
 			})
 			if err != nil {
@@ -103,11 +120,12 @@ func (u *LiabilityUsecase) Update(user *model.User, req *model.UpdateLiabilityRe
 			}
 		} else {
 			insertData = append(insertData, model.Liability{
-				PeriodCode: req.PeriodCode,
-				Name:       data.Name,
-				Value:      encValue,
-				OrderNo:    data.OrderNo,
-				UserID:     user.ID,
+				PeriodCode:  req.PeriodCode,
+				Name:        data.Name,
+				Value:       encValue,
+				Installment: encInstallment,
+				OrderNo:     data.OrderNo,
+				UserID:      user.ID,
 			})
 		}
 	}

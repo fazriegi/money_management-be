@@ -116,7 +116,7 @@ func (u *ExpenseUsecase) Update(user *model.User, req *model.UpdateExpenseReques
 					return
 				}
 
-				liabilityDecValue, err := libs.Decrypt(string(liability.Value.([]uint8)))
+				liabilityDecValue, err := libs.Decrypt(string(liability.Value))
 				if err != nil {
 					u.log.Errorf("error decrypting value: %s", err.Error())
 					resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
@@ -172,7 +172,7 @@ func (u *ExpenseUsecase) Update(user *model.User, req *model.UpdateExpenseReques
 					return
 				}
 
-				liabilityDecValue, err := libs.Decrypt(string(liability.Value.([]uint8)))
+				liabilityDecValue, err := libs.Decrypt(string(liability.Value))
 				if err != nil {
 					u.log.Errorf("error decrypting value: %s", err.Error())
 					resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)

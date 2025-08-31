@@ -1,0 +1,2 @@
+ALTER TABLE liabilities
+ADD COLUMN installment VARCHAR(255) NOT NULL;
