@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/fazriegi/money_management-be/model"
 	"github.com/spf13/viper"
 )
 
@@ -24,12 +23,12 @@ func InitJWT(viper *viper.Viper) *JWT {
 	}
 }
 
-func (s JWT) GenerateJWTToken(user *model.User) (string, error) {
+func (s JWT) GenerateJWTToken(id uint, email, username string) (string, error) {
 	exp := time.Duration(s.expHour) * time.Hour
 	claims := jwt.MapClaims{
-		"id":       user.ID,
-		"email":    user.Email,
-		"username": user.Username,
+		"id":       id,
+		"email":    email,
+		"username": username,
 		"exp":      time.Now().Add(exp).Unix(),
 	}
 

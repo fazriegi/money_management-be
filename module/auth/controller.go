@@ -1,38 +1,37 @@
-package controller
+package auth
 
 import (
 	"net/http"
 
 	"github.com/fazriegi/money_management-be/config"
 	"github.com/fazriegi/money_management-be/libs"
-	"github.com/fazriegi/money_management-be/model"
-	"github.com/fazriegi/money_management-be/usecase"
-	"github.com/sirupsen/logrus"
-
+	entityModel "github.com/fazriegi/money_management-be/model"
+	"github.com/fazriegi/money_management-be/module/auth/model"
 	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
 )
 
-type IAuthController interface {
+type Controller interface {
 	Register(ctx *fiber.Ctx) error
 	Login(ctx *fiber.Ctx) error
 }
 
-type AuthController struct {
-	usecase usecase.IAuthUsecase
+type controller struct {
+	usecase Usecase
 	logger  *logrus.Logger
 }
 
-func NewAuthController(usecase usecase.IAuthUsecase) IAuthController {
+func NewWController(usecase Usecase) Controller {
 	logger := config.GetLogger()
-	return &AuthController{
+	return &controller{
 		usecase,
 		logger,
 	}
 }
 
-func (c *AuthController) Register(ctx *fiber.Ctx) error {
+func (c *controller) Register(ctx *fiber.Ctx) error {
 	var (
-		response model.Response
+		response entityModel.Response
 		reqBody  model.RegisterRequest
 	)
 
@@ -61,9 +60,9 @@ func (c *AuthController) Register(ctx *fiber.Ctx) error {
 	return ctx.Status(response.Status.Code).JSON(response)
 }
 
-func (c *AuthController) Login(ctx *fiber.Ctx) error {
+func (c *controller) Login(ctx *fiber.Ctx) error {
 	var (
-		response model.Response
+		response entityModel.Response
 		reqBody  model.LoginRequest
 	)
 

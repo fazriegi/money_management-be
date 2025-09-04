@@ -1,13 +1,11 @@
-package route
+package module
 
 import (
 	"github.com/fazriegi/money_management-be/libs"
+	"github.com/fazriegi/money_management-be/module/auth"
 	"github.com/gofiber/fiber/v2"
 )
 
 func NewRoute(app *fiber.App, jwt *libs.JWT) {
-	NewAssetRoute(app, jwt)
-	NewIncomeRoute(app, jwt)
-	NewExpenseRoute(app, jwt)
-	NewLiabilityRoute(app, jwt)
+	auth.NewRoute(app, jwt)
 }
