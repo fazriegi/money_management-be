@@ -21,7 +21,7 @@ type controller struct {
 	logger  *logrus.Logger
 }
 
-func NewWController(usecase Usecase) Controller {
+func NewController(usecase Usecase) Controller {
 	logger := config.GetLogger()
 	return &controller{
 		usecase,

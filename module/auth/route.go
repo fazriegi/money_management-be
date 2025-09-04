@@ -10,7 +10,7 @@ import (
 func NewRoute(app *fiber.App, jwt *libs.JWT) {
 	repo := user.NewRepository()
 	usecase := NewUsecase(repo, jwt)
-	controller := NewWController(usecase)
+	controller := NewController(usecase)
 
 	Auth := app.Group("/auth")
 	Auth.Post("/register", controller.Register)
