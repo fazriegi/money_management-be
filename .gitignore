@@ -5,3 +5,4 @@ log/
 tmp/
 .air.toml
 bin/
+launch.json

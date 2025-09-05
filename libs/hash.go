@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -22,13 +23,20 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func Encrypt(value string) (string, error) {
-	keyStr := config.GetConfigString("secret.encryptionKey")
+func deriveKey(keyStr string) []byte {
+	h := sha256.Sum256([]byte(keyStr))
+	return h[:] // 32 bytes for AES-256
+}
+
+func Encrypt(keyStr, value string) (string, error) {
 	if keyStr == "" {
-		return "", fmt.Errorf("encryption key is not set in config")
+		keyStr = config.GetConfigString("secret.encryptionKey")
+		if keyStr == "" {
+			return "", fmt.Errorf("encryption key is not set in config")
+		}
 	}
 
-	key := []byte(keyStr)
+	key := deriveKey(keyStr)
 	if len(key) != 16 && len(key) != 24 && len(key) != 32 {
 		return "", fmt.Errorf("invalid key size: must be 16, 24, or 32 bytes")
 	}
@@ -54,13 +62,15 @@ func Encrypt(value string) (string, error) {
 	return base64.StdEncoding.EncodeToString(output), nil
 }
 
-func Decrypt(encodedCipher string) (string, error) {
-	keyStr := config.GetConfigString("secret.encryptionKey")
+func Decrypt(keyStr, encodedCipher string) (string, error) {
 	if keyStr == "" {
-		return "", fmt.Errorf("encryption key is not set in config")
+		keyStr = config.GetConfigString("secret.encryptionKey")
+		if keyStr == "" {
+			return "", fmt.Errorf("encryption key is not set in config")
+		}
 	}
 
-	key := []byte(keyStr)
+	key := deriveKey(keyStr)
 	if len(key) != 16 && len(key) != 24 && len(key) != 32 {
 		return "", fmt.Errorf("invalid key size: must be 16, 24, or 32 bytes")
 	}
