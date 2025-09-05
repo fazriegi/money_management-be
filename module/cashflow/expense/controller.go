@@ -18,6 +18,7 @@ type Controller interface {
 	Update(ctx *fiber.Ctx) error
 	Delete(ctx *fiber.Ctx) error
 	ListCategory(ctx *fiber.Ctx) error
+	GetById(ctx *fiber.Ctx) error
 }
 
 type controller struct {
@@ -137,6 +138,23 @@ func (c *controller) ListCategory(ctx *fiber.Ctx) error {
 	)
 
 	response = c.usecase.ListCategory(&user)
+
+	return ctx.Status(response.Status.Code).JSON(response)
+}
+
+func (c *controller) GetById(ctx *fiber.Ctx) error {
+	var (
+		response common.Response
+		user     = ctx.Locals("user").(userModel.User)
+	)
+
+	id, err := ctx.ParamsInt("id")
+	if err != nil {
+		c.log.Errorf("error get param: %s", err.Error())
+		return ctx.Status(http.StatusBadRequest).JSON(response.CustomResponse(http.StatusBadRequest, "invalid id", nil))
+	}
+
+	response = c.usecase.GetById(&user, uint(id))
 
 	return ctx.Status(response.Status.Code).JSON(response)
 }

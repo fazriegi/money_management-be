@@ -59,6 +59,7 @@ func (u *usecase) List(user *userModel.User, req *model.ListRequest) (resp commo
 			Category: data.Category,
 			Date:     data.Date,
 			Value:    value,
+			Type:     data.Type,
 		}
 	}
 

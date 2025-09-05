@@ -55,6 +55,7 @@ func (r *repository) List(req *model.ListRequest, db *sqlx.DB) (result []model.G
 			goqu.I("date"),
 			goqu.I("value"),
 			goqu.I("user_id"),
+			goqu.I("type"),
 		)
 
 	if req.Category != "" {

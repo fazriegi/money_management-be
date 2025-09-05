@@ -18,6 +18,7 @@ type Repository interface {
 	Update(userId, id uint, data map[string]any, tx *sqlx.Tx) error
 	Delete(userId, id uint, tx *sqlx.Tx) error
 	CreateListQuery(req *cashflowModel.ListFilter) *goqu.SelectDataset
+	GetById(userId, id uint, db *sqlx.DB) (result model.GetExpense, err error)
 }
 
 type repository struct{}
@@ -199,6 +200,7 @@ func (r *repository) CreateListQuery(req *cashflowModel.ListFilter) *goqu.Select
 			goqu.I("expense.date"),
 			goqu.I("expense.value"),
 			goqu.I("expense.user_id"),
+			goqu.V("expense").As("type"),
 		).
 		Where(
 			goqu.I("expense.user_id").Eq(req.UserId),
@@ -209,4 +211,39 @@ func (r *repository) CreateListQuery(req *cashflowModel.ListFilter) *goqu.Select
 	}
 
 	return dataset
+}
+
+func (r *repository) GetById(userId, id uint, db *sqlx.DB) (result model.GetExpense, err error) {
+	dialect := libs.GetDialect()
+
+	dataset := dialect.
+		From("expense").
+		Join(goqu.T("user_expense_category").As("uec"), goqu.On(
+			goqu.I("uec.id").Eq(goqu.I("expense.category_id")),
+			goqu.I("uec.user_id").Eq(goqu.I("expense.user_id")),
+		)).
+		Select(
+			goqu.I("expense.id"),
+			goqu.I("expense.category_id"),
+			goqu.I("uec.name").As("category"),
+			goqu.I("expense.date"),
+			goqu.I("expense.value"),
+			goqu.I("expense.notes"),
+		).
+		Where(
+			goqu.I("expense.user_id").Eq(userId),
+			goqu.I("expense.id").Eq(id),
+		)
+
+	sql, val, err := dataset.ToSQL()
+	if err != nil {
+		return result, fmt.Errorf("failed to build SQL query: %w", err)
+	}
+
+	err = db.Get(&result, sql, val...)
+	if err != nil {
+		return result, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	return
 }
