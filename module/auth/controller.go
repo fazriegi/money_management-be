@@ -38,7 +38,7 @@ func (c *controller) Register(ctx *fiber.Ctx) error {
 
 	if err := ctx.BodyParser(&reqBody); err != nil {
 		c.logger.Errorf("error parsing request body: %s", err.Error())
-		return ctx.Status(fiber.StatusBadRequest).JSON(response.CustomResponse(http.StatusBadRequest, constant.ParseReqBodyErr, nil))
+		return ctx.Status(http.StatusBadRequest).JSON(response.CustomResponse(http.StatusBadRequest, constant.ParseReqBodyErr, nil))
 	}
 
 	// validate reqBody struct
@@ -48,7 +48,7 @@ func (c *controller) Register(ctx *fiber.Ctx) error {
 			"errors": validationErr,
 		}
 
-		return ctx.Status(response.Status.Code).JSON(response.CustomResponse(http.StatusUnprocessableEntity, constant.ValidationErr, errResponse))
+		return ctx.Status(http.StatusUnprocessableEntity).JSON(response.CustomResponse(http.StatusUnprocessableEntity, constant.ValidationErr, errResponse))
 	}
 
 	response = c.usecase.Register(&reqBody)
@@ -64,7 +64,7 @@ func (c *controller) Login(ctx *fiber.Ctx) error {
 
 	if err := ctx.BodyParser(&reqBody); err != nil {
 		c.logger.Errorf("error parsing request body: %s", err.Error())
-		return ctx.Status(fiber.StatusBadRequest).JSON(response.CustomResponse(http.StatusBadRequest, constant.ParseReqBodyErr, nil))
+		return ctx.Status(http.StatusBadRequest).JSON(response.CustomResponse(http.StatusBadRequest, constant.ParseReqBodyErr, nil))
 	}
 
 	// validate reqBody struct
@@ -74,7 +74,7 @@ func (c *controller) Login(ctx *fiber.Ctx) error {
 			"errors": validationErr,
 		}
 
-		return ctx.Status(response.Status.Code).JSON(response.CustomResponse(http.StatusUnprocessableEntity, constant.ValidationErr, errResponse))
+		return ctx.Status(http.StatusUnprocessableEntity).JSON(response.CustomResponse(http.StatusUnprocessableEntity, constant.ValidationErr, errResponse))
 	}
 
 	response = c.usecase.Login(&reqBody)
