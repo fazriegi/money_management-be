@@ -7,6 +7,7 @@ import (
 	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/fazriegi/money_management-be/libs"
 	"github.com/fazriegi/money_management-be/module/cashflow/income/model"
+	cashflowModel "github.com/fazriegi/money_management-be/module/cashflow/model"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -16,6 +17,7 @@ type Repository interface {
 	List(req *model.ListRequest, db *sqlx.DB) (result []model.GetIncome, err error)
 	Update(userId, id uint, data map[string]any, tx *sqlx.Tx) error
 	Delete(userId, id uint, tx *sqlx.Tx) error
+	CreateListQuery(req *cashflowModel.ListFilter) *goqu.SelectDataset
 }
 
 type repository struct{}
@@ -94,7 +96,7 @@ func (r *repository) List(req *model.ListRequest, db *sqlx.DB) (result []model.G
 		)
 
 	if req.Keyword != "" {
-		dataset = dataset.Where(goqu.I("uec.name").Eq(req.Keyword))
+		dataset = dataset.Where(goqu.I("uec.name").ILike("%" + req.Keyword + "%"))
 	}
 
 	dataset = libs.PaginationRequest(dataset, req.PaginationRequest)
@@ -180,4 +182,32 @@ func (r *repository) Delete(userId, id uint, tx *sqlx.Tx) error {
 
 	return nil
 
+}
+
+func (r *repository) CreateListQuery(req *cashflowModel.ListFilter) *goqu.SelectDataset {
+	dialect := libs.GetDialect()
+
+	dataset := dialect.
+		From("income").
+		Join(goqu.T("user_income_category").As("uec"), goqu.On(
+			goqu.I("uec.id").Eq(goqu.I("income.category_id")),
+			goqu.I("uec.user_id").Eq(goqu.I("income.user_id")),
+		)).
+		Select(
+			goqu.I("income.id"),
+			goqu.I("income.category_id"),
+			goqu.I("uec.name").As("category"),
+			goqu.I("income.date"),
+			goqu.I("income.value"),
+			goqu.I("income.user_id"),
+		).
+		Where(
+			goqu.I("income.user_id").Eq(req.UserId),
+		)
+
+	if req.StartDate != "" && req.EndDate != "" {
+		dataset = dataset.Where(goqu.I("income.date").Between(exp.NewRangeVal(req.StartDate, req.EndDate)))
+	}
+
+	return dataset
 }
