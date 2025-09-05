@@ -18,6 +18,7 @@ type Repository interface {
 	Update(userId, id uint, data map[string]any, tx *sqlx.Tx) error
 	Delete(userId, id uint, tx *sqlx.Tx) error
 	CreateListQuery(req *cashflowModel.ListFilter) *goqu.SelectDataset
+	GetById(userId, id uint, db *sqlx.DB) (result model.GetIncome, err error)
 }
 
 type repository struct{}
@@ -211,4 +212,39 @@ func (r *repository) CreateListQuery(req *cashflowModel.ListFilter) *goqu.Select
 	}
 
 	return dataset
+}
+
+func (r *repository) GetById(userId, id uint, db *sqlx.DB) (result model.GetIncome, err error) {
+	dialect := libs.GetDialect()
+
+	dataset := dialect.
+		From("income").
+		Join(goqu.T("user_income_category").As("uec"), goqu.On(
+			goqu.I("uec.id").Eq(goqu.I("income.category_id")),
+			goqu.I("uec.user_id").Eq(goqu.I("income.user_id")),
+		)).
+		Select(
+			goqu.I("income.id"),
+			goqu.I("income.category_id"),
+			goqu.I("uec.name").As("category"),
+			goqu.I("income.date"),
+			goqu.I("income.value"),
+			goqu.I("income.notes"),
+		).
+		Where(
+			goqu.I("income.user_id").Eq(userId),
+			goqu.I("income.id").Eq(id),
+		)
+
+	sql, val, err := dataset.ToSQL()
+	if err != nil {
+		return result, fmt.Errorf("failed to build SQL query: %w", err)
+	}
+
+	err = db.Get(&result, sql, val...)
+	if err != nil {
+		return result, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	return
 }

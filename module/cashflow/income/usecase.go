@@ -20,6 +20,8 @@ type Usecase interface {
 	List(user *userModel.User, req *model.ListRequest) (resp common.Response)
 	Update(user *userModel.User, req *model.UpdateRequest) (resp common.Response)
 	Delete(user *userModel.User, id uint) (resp common.Response)
+
+	GetById(user *userModel.User, id uint) (resp common.Response)
 }
 
 type usecase struct {
@@ -178,4 +180,37 @@ func (u *usecase) Delete(user *userModel.User, id uint) (resp common.Response) {
 	}
 
 	return resp.CustomResponse(http.StatusOK, "success", nil)
+}
+
+func (u *usecase) GetById(user *userModel.User, id uint) (resp common.Response) {
+	db := config.GetDatabase()
+
+	data, err := u.repo.GetById(user.ID, id, db)
+	if err != nil {
+		u.log.Errorf("repo.GetById: %s", err.Error())
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
+	}
+
+	decValue, err := libs.Decrypt(fmt.Sprintf("%d", user.ID), data.Value)
+	if err != nil {
+		u.log.Errorf("error decrypting value: %s", err.Error())
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
+	}
+
+	value, err := strconv.ParseFloat(decValue, 64)
+	if err != nil {
+		u.log.Errorf("error parsing string: %s", err.Error())
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
+	}
+
+	result := model.IncomeData{
+		ID:         data.ID,
+		CategoryId: data.CategoryId,
+		Category:   data.Category,
+		Date:       data.Date,
+		Value:      value,
+		Notes:      data.Notes,
+	}
+
+	return resp.CustomResponse(http.StatusOK, "success", result)
 }
