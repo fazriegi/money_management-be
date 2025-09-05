@@ -6,7 +6,7 @@ import (
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/fazriegi/money_management-be/libs"
-	"github.com/fazriegi/money_management-be/module/expense/model"
+	"github.com/fazriegi/money_management-be/module/cashflow/expense/model"
 	"github.com/jmoiron/sqlx"
 )
 

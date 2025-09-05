@@ -5,8 +5,8 @@ import (
 
 	"github.com/fazriegi/money_management-be/constant"
 	"github.com/fazriegi/money_management-be/libs"
+	"github.com/fazriegi/money_management-be/module/cashflow/expense/model"
 	"github.com/fazriegi/money_management-be/module/common"
-	"github.com/fazriegi/money_management-be/module/expense/model"
 	userModel "github.com/fazriegi/money_management-be/module/master/user/model"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
