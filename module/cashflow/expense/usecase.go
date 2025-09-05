@@ -186,7 +186,7 @@ func (u *usecase) GetById(user *userModel.User, id uint) (resp common.Response) 
 
 	data, err := u.repo.GetById(user.ID, id, db)
 	if err != nil {
-		u.log.Errorf("repo.List: %s", err.Error())
+		u.log.Errorf("repo.GetById: %s", err.Error())
 		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 
