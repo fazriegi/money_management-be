@@ -12,7 +12,7 @@ import (
 
 type Repository interface {
 	Insert(data *model.Expense, tx *sqlx.Tx) error
-	List(req *model.ListRequest, db *sqlx.DB) (result []model.Expense, err error)
+	List(req *model.ListRequest, db *sqlx.DB) (result []model.GetExpense, err error)
 	ListCategory(userID uint, db *sqlx.DB) (result []model.ExpenseCategory, err error)
 	Update(userId, id uint, data map[string]any, tx *sqlx.Tx) error
 	Delete(userId, id uint, tx *sqlx.Tx) error
@@ -42,7 +42,7 @@ func (r *repository) Insert(data *model.Expense, tx *sqlx.Tx) error {
 
 }
 
-func (r *repository) List(req *model.ListRequest, db *sqlx.DB) (result []model.Expense, err error) {
+func (r *repository) List(req *model.ListRequest, db *sqlx.DB) (result []model.GetExpense, err error) {
 	dialect := libs.GetDialect()
 
 	if req.Sort == nil {
@@ -85,7 +85,7 @@ func (r *repository) List(req *model.ListRequest, db *sqlx.DB) (result []model.E
 	}
 	defer row.Close()
 
-	result = make([]model.Expense, 0)
+	result = make([]model.GetExpense, 0)
 	err = libs.ScanRowsIntoStructs(row, &result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan rows into structs: %w", err)

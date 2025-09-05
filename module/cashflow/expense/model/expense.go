@@ -5,6 +5,15 @@ import "github.com/fazriegi/money_management-be/module/common"
 type Expense struct {
 	ID         uint        `db:"id"`
 	CategoryId uint        `db:"category_id"`
+	Date       interface{} `db:"date"`
+	Value      string      `db:"value"`
+	UserId     uint        `db:"user_id"`
+	Notes      string      `db:"notes"`
+}
+
+type GetExpense struct {
+	ID         uint        `db:"id"`
+	CategoryId uint        `db:"category_id"`
 	Category   string      `db:"category"`
 	Date       interface{} `db:"date"`
 	Value      string      `db:"value"`
@@ -24,7 +33,7 @@ type ExpenseData struct {
 type AddRequest struct {
 	CategoryId uint        `json:"category_id" validate:"required"`
 	Date       interface{} `json:"date" validate:"required"`
-	Value      float64     `json:"value"`
+	Value      float64     `json:"value" validate:"required"`
 	Notes      string      `json:"notes"`
 }
 
