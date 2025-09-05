@@ -83,10 +83,6 @@ func (u *usecase) Register(props *model.RegisterRequest) (resp common.Response) 
 	}
 
 	g, _ := errgroup.WithContext(context.Background())
-	if err != nil {
-		u.log.Errorf("failed start goroutine: %s", err.Error())
-		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
-	}
 
 	g.Go(func() error {
 		err = u.repository.CreateExpenseCat(userId, tx)
@@ -126,7 +122,7 @@ func (u *usecase) Register(props *model.RegisterRequest) (resp common.Response) 
 
 	err = g.Wait()
 	if err != nil {
-		u.log.Errorf("failed initialized category: %s", err.Error())
+		u.log.Errorf("failed initialized new user: %s", err.Error())
 		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 
