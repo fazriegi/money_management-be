@@ -105,7 +105,7 @@ func (u *usecase) List(user *userModel.User, req *model.ListRequest) (resp commo
 		}
 	}
 
-	return resp.CustomResponse(http.StatusCreated, "success", result)
+	return resp.CustomResponse(http.StatusOK, "success", result)
 }
 
 func (u *usecase) Update(user *userModel.User, req *model.UpdateRequest) (resp common.Response) {

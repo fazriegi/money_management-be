@@ -13,12 +13,12 @@ type Expense struct {
 }
 
 type ExpenseData struct {
-	ID         uint        `db:"id"`
-	CategoryId uint        `db:"category_id"`
-	Category   string      `db:"category"`
-	Date       interface{} `db:"date"`
-	Value      float64     `db:"value"`
-	Notes      string      `db:"notes"`
+	ID         uint        `json:"id"`
+	CategoryId uint        `json:"category_id"`
+	Category   string      `json:"category"`
+	Date       interface{} `json:"date"`
+	Value      float64     `json:"value"`
+	Notes      string      `json:"notes"`
 }
 
 type AddRequest struct {
