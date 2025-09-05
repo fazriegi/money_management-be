@@ -15,6 +15,7 @@ type Repository interface {
 	CreateIncomeCat(userId uint, tx *sqlx.Tx) error
 	CreateExpenseCat(userId uint, tx *sqlx.Tx) error
 	CreateAssetCat(userId uint, tx *sqlx.Tx) error
+	CreatePeriod(userId uint, tx *sqlx.Tx) error
 }
 
 type repository struct {
@@ -139,6 +140,28 @@ func (r *repository) CreateAssetCat(userId uint, tx *sqlx.Tx) error {
 					goqu.I("name"),
 					goqu.L("?", userId),
 				),
+		)
+
+	sql, val, err := dataset.ToSQL()
+	if err != nil {
+		return fmt.Errorf("failed to build SQL query: %w", err)
+	}
+
+	_, err = tx.Exec(sql, val...)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	return nil
+}
+
+func (r *repository) CreatePeriod(userId uint, tx *sqlx.Tx) error {
+	dialect := libs.GetDialect()
+
+	dataset := dialect.
+		Insert("monthly_period").
+		Rows(
+			map[string]interface{}{"day_of_month": 1, "user_id": userId},
 		)
 
 	sql, val, err := dataset.ToSQL()

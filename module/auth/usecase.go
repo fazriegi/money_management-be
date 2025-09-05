@@ -115,6 +115,15 @@ func (u *usecase) Register(props *model.RegisterRequest) (resp common.Response) 
 		return nil
 	})
 
+	g.Go(func() error {
+		err = u.repository.CreatePeriod(userId, tx)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	err = g.Wait()
 	if err != nil {
 		u.log.Errorf("failed initialized category: %s", err.Error())
