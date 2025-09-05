@@ -15,6 +15,7 @@ import (
 
 type Usecase interface {
 	Add(user *userModel.User, req *model.AddRequest) (resp globalModel.Response)
+	ListCategory(user *userModel.User) (resp globalModel.Response)
 }
 
 type usecase struct {
@@ -70,4 +71,19 @@ func (u *usecase) Add(user *userModel.User, req *model.AddRequest) (resp globalM
 	resp.Status = libs.CustomResponse(http.StatusCreated, "success")
 	return
 
+}
+
+func (u *usecase) ListCategory(user *userModel.User) (resp globalModel.Response) {
+	db := config.GetDatabase()
+
+	data, err := u.repo.ListCategory(user.ID, db)
+	if err != nil {
+		u.log.Errorf("repo.ListCategory: %s", err.Error())
+		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
+		return
+	}
+
+	resp.Status = libs.CustomResponse(http.StatusOK, "success")
+	resp.Data = data
+	return
 }

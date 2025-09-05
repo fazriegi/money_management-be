@@ -15,3 +15,8 @@ type AddRequest struct {
 	Value      float64     `json:"value"`
 	Notes      string      `json:"notes"`
 }
+
+type ExpenseCategory struct {
+	ID   uint   `db:"id" json:"id"`
+	Name string `db:"name" json:"name"`
+}

@@ -15,4 +15,5 @@ func NewRoute(app *fiber.App, jwt *libs.JWT) {
 
 	route := app.Group("/expense")
 	route.Post("/", middleware.Authentication(jwt), controller.Add)
+	route.Get("/category", middleware.Authentication(jwt), controller.ListCategory)
 }

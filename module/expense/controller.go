@@ -14,6 +14,7 @@ import (
 
 type Controller interface {
 	Add(ctx *fiber.Ctx) error
+	ListCategory(ctx *fiber.Ctx) error
 }
 
 type controller struct {
@@ -57,6 +58,17 @@ func (c *controller) Add(ctx *fiber.Ctx) error {
 	}
 
 	response = c.usecase.Add(&user, &reqBody)
+
+	return ctx.Status(response.Status.Code).JSON(response)
+}
+
+func (c *controller) ListCategory(ctx *fiber.Ctx) error {
+	var (
+		response globalModel.Response
+		user     = ctx.Locals("user").(userModel.User)
+	)
+
+	response = c.usecase.ListCategory(&user)
 
 	return ctx.Status(response.Status.Code).JSON(response)
 }
