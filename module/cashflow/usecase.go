@@ -34,7 +34,7 @@ func (u *usecase) List(user *userModel.User, req *model.ListRequest) (resp commo
 	db := config.GetDatabase()
 
 	req.UserId = user.ID
-	listData, err := u.repo.List(req, db)
+	listData, total, err := u.repo.List(req, db)
 	if err != nil {
 		u.log.Errorf("repo.List: %s", err.Error())
 		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
@@ -62,5 +62,10 @@ func (u *usecase) List(user *userModel.User, req *model.ListRequest) (resp commo
 		}
 	}
 
-	return resp.CustomResponse(http.StatusOK, "success", result)
+	responseData := map[string]any{
+		"data":  result,
+		"total": total,
+	}
+
+	return resp.CustomResponse(http.StatusOK, "success", responseData)
 }
