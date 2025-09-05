@@ -200,6 +200,7 @@ func (r *repository) CreateListQuery(req *cashflowModel.ListFilter) *goqu.Select
 			goqu.I("income.date"),
 			goqu.I("income.value"),
 			goqu.I("income.user_id"),
+			goqu.V("income").As("type"),
 		).
 		Where(
 			goqu.I("income.user_id").Eq(req.UserId),

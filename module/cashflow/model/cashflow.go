@@ -8,6 +8,7 @@ type GetCashflow struct {
 	Date     interface{} `db:"date"`
 	Value    string      `db:"value"`
 	UserId   uint        `db:"user_id"`
+	Type     string      `db:"type"`
 }
 
 type ListFilter struct {
@@ -27,4 +28,5 @@ type CashflowData struct {
 	Category string      `json:"category"`
 	Date     interface{} `json:"date"`
 	Value    float64     `json:"value"`
+	Type     string      `json:"type"`
 }
