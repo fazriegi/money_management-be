@@ -6,32 +6,30 @@ import (
 	"strings"
 
 	"github.com/fazriegi/money_management-be/libs"
-	"github.com/fazriegi/money_management-be/model"
+	"github.com/fazriegi/money_management-be/module/common"
 	userModel "github.com/fazriegi/money_management-be/module/master/user/model"
 	"github.com/gofiber/fiber/v2"
 )
 
 func Authentication(jwt *libs.JWT) func(ctx *fiber.Ctx) error {
 	return func(ctx *fiber.Ctx) error {
-		var response = model.Response{}
+		var response = common.Response{}
 		header := ctx.Get("Authorization")
 		isHasBearer := strings.HasPrefix(header, "Bearer")
 
 		if !isHasBearer {
-			status := libs.CustomResponse(http.StatusUnauthorized, "sign in to proceed")
-			response.Status = status
+			response = response.CustomResponse(http.StatusUnauthorized, "sign in to proceed", nil)
 
-			return ctx.Status(status.Code).JSON(response)
+			return ctx.Status(response.Code).JSON(response)
 		}
 
 		tokenString := strings.Split(header, " ")[1]
 
 		verifiedToken, err := jwt.VerifyJWTTOken(tokenString)
 		if err != nil {
-			status := libs.CustomResponse(http.StatusUnauthorized, err.Error())
-			response.Status = status
+			response = response.CustomResponse(http.StatusUnauthorized, err.Error(), nil)
 
-			return ctx.Status(status.Code).JSON(response)
+			return ctx.Status(response.Code).JSON(response)
 		}
 
 		jsonData, _ := json.Marshal(verifiedToken)

@@ -2,8 +2,8 @@ package expense
 
 import (
 	"github.com/fazriegi/money_management-be/config"
-	"github.com/fazriegi/money_management-be/delivery/http/middleware"
 	"github.com/fazriegi/money_management-be/libs"
+	"github.com/fazriegi/money_management-be/middleware"
 	"github.com/gofiber/fiber/v2"
 )
 

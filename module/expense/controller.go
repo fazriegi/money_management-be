@@ -3,13 +3,13 @@ package expense
 import (
 	"net/http"
 
+	"github.com/fazriegi/money_management-be/constant"
 	"github.com/fazriegi/money_management-be/libs"
+	"github.com/fazriegi/money_management-be/module/common"
 	"github.com/fazriegi/money_management-be/module/expense/model"
 	userModel "github.com/fazriegi/money_management-be/module/master/user/model"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
-
-	globalModel "github.com/fazriegi/money_management-be/model"
 )
 
 type Controller interface {
@@ -31,7 +31,7 @@ func NewController(log *logrus.Logger, usecase Usecase) Controller {
 
 func (c *controller) Add(ctx *fiber.Ctx) error {
 	var (
-		response globalModel.Response
+		response common.Response
 		reqBody  model.AddRequest
 
 		user = ctx.Locals("user").(userModel.User)
@@ -39,8 +39,7 @@ func (c *controller) Add(ctx *fiber.Ctx) error {
 
 	if err := ctx.BodyParser(&reqBody); err != nil {
 		c.log.Errorf("error parsing request body: %s", err.Error())
-		response.Status = libs.CustomResponse(http.StatusBadRequest, "error parsing request body")
-		return ctx.Status(fiber.StatusBadRequest).JSON(response)
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.CustomResponse(http.StatusBadRequest, constant.ParseReqBodyErr, nil))
 	}
 
 	// validate reqBody struct
@@ -50,11 +49,7 @@ func (c *controller) Add(ctx *fiber.Ctx) error {
 			"errors": validationErr,
 		}
 
-		response.Status =
-			libs.CustomResponse(http.StatusUnprocessableEntity, "validation error")
-		response.Data = errResponse
-
-		return ctx.Status(response.Status.Code).JSON(response)
+		return ctx.Status(response.Status.Code).JSON(response.CustomResponse(http.StatusUnprocessableEntity, constant.ValidationErr, errResponse))
 	}
 
 	response = c.usecase.Add(&user, &reqBody)
@@ -64,7 +59,7 @@ func (c *controller) Add(ctx *fiber.Ctx) error {
 
 func (c *controller) ListCategory(ctx *fiber.Ctx) error {
 	var (
-		response globalModel.Response
+		response common.Response
 		user     = ctx.Locals("user").(userModel.User)
 	)
 

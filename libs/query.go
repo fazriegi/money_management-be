@@ -7,11 +7,11 @@ import (
 
 	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
-	"github.com/fazriegi/money_management-be/model"
+	"github.com/fazriegi/money_management-be/module/common"
 	"github.com/jmoiron/sqlx"
 )
 
-func PaginationRequest(dataset *goqu.SelectDataset, req model.PaginationRequest) *goqu.SelectDataset {
+func PaginationRequest(dataset *goqu.SelectDataset, req common.PaginationRequest) *goqu.SelectDataset {
 	if req.Sort != nil && *req.Sort != "" {
 		parts := strings.Fields(*req.Sort)
 		if len(parts) > 0 {

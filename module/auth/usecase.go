@@ -9,8 +9,8 @@ import (
 	"github.com/fazriegi/money_management-be/config"
 	"github.com/fazriegi/money_management-be/constant"
 	"github.com/fazriegi/money_management-be/libs"
-	globalModel "github.com/fazriegi/money_management-be/model"
 	"github.com/fazriegi/money_management-be/module/auth/model"
+	"github.com/fazriegi/money_management-be/module/common"
 	"github.com/fazriegi/money_management-be/module/master/user"
 	userModel "github.com/fazriegi/money_management-be/module/master/user/model"
 	"golang.org/x/sync/errgroup"
@@ -19,8 +19,8 @@ import (
 )
 
 type Usecase interface {
-	Register(props *model.RegisterRequest) (resp globalModel.Response)
-	Login(props *model.LoginRequest) (resp globalModel.Response)
+	Register(props *model.RegisterRequest) (resp common.Response)
+	Login(props *model.LoginRequest) (resp common.Response)
 }
 
 type usecase struct {
@@ -39,7 +39,7 @@ func NewUsecase(repository user.Repository, jwt *libs.JWT) Usecase {
 	}
 }
 
-func (u *usecase) Register(props *model.RegisterRequest) (resp globalModel.Response) {
+func (u *usecase) Register(props *model.RegisterRequest) (resp common.Response) {
 	var (
 		err            error
 		user           userModel.User
@@ -50,26 +50,22 @@ func (u *usecase) Register(props *model.RegisterRequest) (resp globalModel.Respo
 	user, err = u.repository.GetByUsername(props.Username, db)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		u.log.Errorf("repository.GetByUsername: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
-		return
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 
 	if user.Username != "" {
-		resp.Status = libs.CustomResponse(http.StatusBadRequest, "username already exists")
-		return
+		return resp.CustomResponse(http.StatusBadRequest, "username already exists", nil)
 	}
 
 	if hashedPassword, err = libs.HashPassword(props.Password); err != nil {
 		u.log.Errorf("libs.HashPassword: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
-		return
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 
 	tx, err := db.Beginx()
 	if err != nil {
 		u.log.Errorf("error start transaction: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
-		return
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 	defer tx.Rollback()
 
@@ -83,15 +79,13 @@ func (u *usecase) Register(props *model.RegisterRequest) (resp globalModel.Respo
 	userId, err := u.repository.Insert(&user, tx)
 	if err != nil {
 		u.log.Errorf("repository.Insert: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
-		return
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 
 	g, _ := errgroup.WithContext(context.Background())
 	if err != nil {
 		u.log.Errorf("failed start goroutine: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
-		return
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 
 	g.Go(func() error {
@@ -124,14 +118,12 @@ func (u *usecase) Register(props *model.RegisterRequest) (resp globalModel.Respo
 	err = g.Wait()
 	if err != nil {
 		u.log.Errorf("failed initialized category: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
-		return
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 
 	if err := tx.Commit(); err != nil {
 		u.log.Errorf("failed commit tx: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
-		return
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 
 	createdUser := userModel.UserResponse{
@@ -140,35 +132,28 @@ func (u *usecase) Register(props *model.RegisterRequest) (resp globalModel.Respo
 		Username: user.Username,
 	}
 
-	resp.Status = libs.CustomResponse(http.StatusCreated, "register success")
-	resp.Data = createdUser
-	return
+	return resp.CustomResponse(http.StatusCreated, "success", createdUser)
 }
 
-func (u *usecase) Login(props *model.LoginRequest) (resp globalModel.Response) {
+func (u *usecase) Login(props *model.LoginRequest) (resp common.Response) {
 	db := config.GetDatabase()
 
 	existingUser, err := u.repository.GetByUsername(props.Username, db)
-
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		resp.Status = libs.CustomResponse(http.StatusUnauthorized, "invalid username or password")
-		return
+		return resp.CustomResponse(http.StatusUnauthorized, "invalid username or password", nil)
 	} else if err != nil {
 		u.log.Errorf("repository.GetByUsername: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
-		return
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 
 	if !libs.CheckPasswordHash(props.Password, existingUser.Password) {
-		resp.Status = libs.CustomResponse(http.StatusUnauthorized, "invalid username or password")
-		return
+		return resp.CustomResponse(http.StatusUnauthorized, "invalid username or password", nil)
 	}
 
 	token, err := u.jwt.GenerateJWTToken(existingUser.ID, existingUser.Email, existingUser.Username)
 	if err != nil {
 		u.log.Errorf("libs.GenerateJWTToken: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
-		return
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 
 	data := map[string]any{
@@ -179,8 +164,5 @@ func (u *usecase) Login(props *model.LoginRequest) (resp globalModel.Response) {
 		},
 	}
 
-	return globalModel.Response{
-		Data:   data,
-		Status: libs.CustomResponse(http.StatusOK, "login success"),
-	}
+	return resp.CustomResponse(http.StatusOK, "success", data)
 }

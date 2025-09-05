@@ -7,15 +7,15 @@ import (
 	"github.com/fazriegi/money_management-be/config"
 	"github.com/fazriegi/money_management-be/constant"
 	"github.com/fazriegi/money_management-be/libs"
-	globalModel "github.com/fazriegi/money_management-be/model"
+	"github.com/fazriegi/money_management-be/module/common"
 	"github.com/fazriegi/money_management-be/module/expense/model"
 	userModel "github.com/fazriegi/money_management-be/module/master/user/model"
 	"github.com/sirupsen/logrus"
 )
 
 type Usecase interface {
-	Add(user *userModel.User, req *model.AddRequest) (resp globalModel.Response)
-	ListCategory(user *userModel.User) (resp globalModel.Response)
+	Add(user *userModel.User, req *model.AddRequest) (resp common.Response)
+	ListCategory(user *userModel.User) (resp common.Response)
 }
 
 type usecase struct {
@@ -30,21 +30,19 @@ func NewUsecase(log *logrus.Logger, repo Repository) Usecase {
 	}
 }
 
-func (u *usecase) Add(user *userModel.User, req *model.AddRequest) (resp globalModel.Response) {
+func (u *usecase) Add(user *userModel.User, req *model.AddRequest) (resp common.Response) {
 	db := config.GetDatabase()
 	tx, err := db.Beginx()
 	if err != nil {
 		u.log.Errorf("error begin tx: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
-		return
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 	defer tx.Rollback()
 
 	encValue, err := libs.Encrypt(fmt.Sprintf("%d", user.ID), fmt.Sprintf("%0.f", req.Value))
 	if err != nil {
 		u.log.Errorf("error encrypting value: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
-		return
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 
 	data := model.Expense{
@@ -58,32 +56,26 @@ func (u *usecase) Add(user *userModel.User, req *model.AddRequest) (resp globalM
 	err = u.repo.Insert(&data, tx)
 	if err != nil {
 		u.log.Errorf("failed insert expense: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
-		return
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 
 	if err := tx.Commit(); err != nil {
 		u.log.Errorf("failed commit tx: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
-		return
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 
-	resp.Status = libs.CustomResponse(http.StatusCreated, "success")
-	return
+	return resp.CustomResponse(http.StatusCreated, "success", nil)
 
 }
 
-func (u *usecase) ListCategory(user *userModel.User) (resp globalModel.Response) {
+func (u *usecase) ListCategory(user *userModel.User) (resp common.Response) {
 	db := config.GetDatabase()
 
 	data, err := u.repo.ListCategory(user.ID, db)
 	if err != nil {
 		u.log.Errorf("repo.ListCategory: %s", err.Error())
-		resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
-		return
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 
-	resp.Status = libs.CustomResponse(http.StatusOK, "success")
-	resp.Data = data
-	return
+	return resp.CustomResponse(http.StatusOK, "success", data)
 }
