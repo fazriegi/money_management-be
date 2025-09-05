@@ -1,7 +1,9 @@
 package libs
 
 import (
+	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -17,6 +19,18 @@ func ValidateRequest(data any) []ValidationErrResponse {
 
 	validate := validator.New()
 	validate.RegisterValidation("password", password) // register custom validator
+
+	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := fld.Tag.Get("json")
+		if name == "-" {
+			return ""
+		}
+
+		if idx := strings.Index(name, ","); idx != -1 {
+			name = name[:idx]
+		}
+		return name
+	})
 
 	err := validate.Struct(data)
 	if err != nil {
