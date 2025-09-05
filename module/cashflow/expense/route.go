@@ -18,5 +18,6 @@ func NewRoute(app *fiber.App, jwt *libs.JWT) {
 	route.Get("/", middleware.Authentication(jwt), controller.List)
 	route.Put("/:id", middleware.Authentication(jwt), controller.Update)
 	route.Delete("/:id", middleware.Authentication(jwt), controller.Delete)
+	route.Get("/:id", middleware.Authentication(jwt), controller.GetById)
 	route.Get("/category", middleware.Authentication(jwt), controller.ListCategory)
 }
