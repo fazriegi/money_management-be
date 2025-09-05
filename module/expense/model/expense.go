@@ -34,6 +34,14 @@ type ListRequest struct {
 	UserId  uint
 }
 
+type UpdateRequest struct {
+	ID         uint
+	CategoryId uint        `json:"category_id" validate:"required"`
+	Date       interface{} `json:"date" validate:"required"`
+	Value      float64     `json:"value"`
+	Notes      string      `json:"notes"`
+}
+
 type ExpenseCategory struct {
 	ID   uint   `db:"id" json:"id"`
 	Name string `db:"name" json:"name"`

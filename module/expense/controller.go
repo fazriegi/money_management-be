@@ -15,6 +15,7 @@ import (
 type Controller interface {
 	Add(ctx *fiber.Ctx) error
 	List(ctx *fiber.Ctx) error
+	Update(ctx *fiber.Ctx) error
 	ListCategory(ctx *fiber.Ctx) error
 }
 
@@ -72,6 +73,41 @@ func (c *controller) List(ctx *fiber.Ctx) error {
 	}
 
 	response = c.usecase.List(&user, &reqBody)
+
+	return ctx.Status(response.Status.Code).JSON(response)
+}
+
+func (c *controller) Update(ctx *fiber.Ctx) error {
+	var (
+		response common.Response
+		reqBody  model.UpdateRequest
+
+		user = ctx.Locals("user").(userModel.User)
+	)
+
+	id, err := ctx.ParamsInt("id")
+	if err != nil {
+		c.log.Errorf("error get param: %s", err.Error())
+		return ctx.Status(http.StatusBadRequest).JSON(response.CustomResponse(http.StatusBadRequest, "invalid id", nil))
+	}
+
+	if err := ctx.BodyParser(&reqBody); err != nil {
+		c.log.Errorf("error parsing request body: %s", err.Error())
+		return ctx.Status(http.StatusBadRequest).JSON(response.CustomResponse(http.StatusBadRequest, constant.ParseReqBodyErr, nil))
+	}
+
+	// validate reqBody struct
+	validationErr := libs.ValidateRequest(&reqBody)
+	if len(validationErr) > 0 {
+		errResponse := map[string]any{
+			"errors": validationErr,
+		}
+
+		return ctx.Status(http.StatusUnprocessableEntity).JSON(response.CustomResponse(http.StatusUnprocessableEntity, constant.ValidationErr, errResponse))
+	}
+
+	reqBody.ID = uint(id)
+	response = c.usecase.Update(&user, &reqBody)
 
 	return ctx.Status(response.Status.Code).JSON(response)
 }

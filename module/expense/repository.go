@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
+	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/fazriegi/money_management-be/libs"
 	"github.com/fazriegi/money_management-be/module/expense/model"
 	"github.com/jmoiron/sqlx"
@@ -13,6 +14,7 @@ type Repository interface {
 	Insert(data *model.Expense, tx *sqlx.Tx) error
 	List(req *model.ListRequest, db *sqlx.DB) (result []model.Expense, err error)
 	ListCategory(userID uint, db *sqlx.DB) (result []model.ExpenseCategory, err error)
+	Update(userId, id uint, data map[string]any, tx *sqlx.Tx) error
 }
 
 type repository struct{}
@@ -89,6 +91,46 @@ func (r *repository) List(req *model.ListRequest, db *sqlx.DB) (result []model.E
 	}
 
 	return
+}
+
+func (r *repository) Update(userId, id uint, data map[string]any, tx *sqlx.Tx) error {
+	dialect := libs.GetDialect()
+
+	selectQ, selectV, err := dialect.From("expense").
+		Where(
+			goqu.I("id").Eq(id),
+			goqu.I("user_id").Eq(userId),
+		).
+		ForUpdate(exp.Wait).
+		ToSQL()
+
+	if err != nil {
+		return fmt.Errorf("failed to build SQL query: %w", err)
+	}
+
+	_, err = tx.Exec(selectQ, selectV...)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	dataset := dialect.Update("expense").Set(data).
+		Where(
+			goqu.I("id").Eq(id),
+			goqu.I("user_id").Eq(userId),
+		)
+
+	sql, val, err := dataset.ToSQL()
+	if err != nil {
+		return fmt.Errorf("failed to build SQL query: %w", err)
+	}
+
+	_, err = tx.Exec(sql, val...)
+	if err != nil {
+		return fmt.Errorf("failed to execute insert: %w", err)
+	}
+
+	return nil
+
 }
 
 func (r *repository) ListCategory(userID uint, db *sqlx.DB) (result []model.ExpenseCategory, err error) {
