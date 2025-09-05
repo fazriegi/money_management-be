@@ -18,6 +18,7 @@ type Usecase interface {
 	Add(user *userModel.User, req *model.AddRequest) (resp common.Response)
 	List(user *userModel.User, req *model.ListRequest) (resp common.Response)
 	Update(user *userModel.User, req *model.UpdateRequest) (resp common.Response)
+	Delete(user *userModel.User, id uint) (resp common.Response)
 	ListCategory(user *userModel.User) (resp common.Response)
 }
 
@@ -132,6 +133,30 @@ func (u *usecase) Update(user *userModel.User, req *model.UpdateRequest) (resp c
 	err = u.repo.Update(user.ID, req.ID, data, tx)
 	if err != nil {
 		u.log.Errorf("failed update expense: %s", err.Error())
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
+	}
+
+	if err := tx.Commit(); err != nil {
+		u.log.Errorf("failed commit tx: %s", err.Error())
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
+	}
+
+	return resp.CustomResponse(http.StatusOK, "success", nil)
+}
+
+func (u *usecase) Delete(user *userModel.User, id uint) (resp common.Response) {
+	db := config.GetDatabase()
+
+	tx, err := db.Beginx()
+	if err != nil {
+		u.log.Errorf("error begin tx: %s", err.Error())
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
+	}
+	defer tx.Rollback()
+
+	err = u.repo.Delete(user.ID, id, tx)
+	if err != nil {
+		u.log.Errorf("failed delete expense: %s", err.Error())
 		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
 	}
 

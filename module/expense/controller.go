@@ -16,6 +16,7 @@ type Controller interface {
 	Add(ctx *fiber.Ctx) error
 	List(ctx *fiber.Ctx) error
 	Update(ctx *fiber.Ctx) error
+	Delete(ctx *fiber.Ctx) error
 	ListCategory(ctx *fiber.Ctx) error
 }
 
@@ -108,6 +109,23 @@ func (c *controller) Update(ctx *fiber.Ctx) error {
 
 	reqBody.ID = uint(id)
 	response = c.usecase.Update(&user, &reqBody)
+
+	return ctx.Status(response.Status.Code).JSON(response)
+}
+
+func (c *controller) Delete(ctx *fiber.Ctx) error {
+	var (
+		response common.Response
+		user     = ctx.Locals("user").(userModel.User)
+	)
+
+	id, err := ctx.ParamsInt("id")
+	if err != nil {
+		c.log.Errorf("error get param: %s", err.Error())
+		return ctx.Status(http.StatusBadRequest).JSON(response.CustomResponse(http.StatusBadRequest, "invalid id", nil))
+	}
+
+	response = c.usecase.Delete(&user, uint(id))
 
 	return ctx.Status(response.Status.Code).JSON(response)
 }
