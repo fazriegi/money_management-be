@@ -3,6 +3,7 @@ package expense
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/fazriegi/money_management-be/config"
 	"github.com/fazriegi/money_management-be/constant"
@@ -15,6 +16,7 @@ import (
 
 type Usecase interface {
 	Add(user *userModel.User, req *model.AddRequest) (resp common.Response)
+	List(user *userModel.User, req *model.ListRequest) (resp common.Response)
 	ListCategory(user *userModel.User) (resp common.Response)
 }
 
@@ -65,7 +67,43 @@ func (u *usecase) Add(user *userModel.User, req *model.AddRequest) (resp common.
 	}
 
 	return resp.CustomResponse(http.StatusCreated, "success", nil)
+}
 
+func (u *usecase) List(user *userModel.User, req *model.ListRequest) (resp common.Response) {
+	db := config.GetDatabase()
+
+	req.UserId = user.ID
+	listData, err := u.repo.List(req, db)
+	if err != nil {
+		u.log.Errorf("repo.List: %s", err.Error())
+		return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
+	}
+
+	result := make([]model.ExpenseData, len(listData))
+	for i, data := range listData {
+		decValue, err := libs.Decrypt(fmt.Sprintf("%d", user.ID), data.Value)
+		if err != nil {
+			u.log.Errorf("error decrypting value: %s", err.Error())
+			return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
+		}
+
+		value, err := strconv.ParseFloat(decValue, 64)
+		if err != nil {
+			u.log.Errorf("error parsing string: %s", err.Error())
+			return resp.CustomResponse(http.StatusInternalServerError, constant.ServerErr, nil)
+		}
+
+		result[i] = model.ExpenseData{
+			ID:         data.ID,
+			CategoryId: data.CategoryId,
+			Category:   data.Category,
+			Date:       data.Date,
+			Value:      value,
+			Notes:      data.Notes,
+		}
+	}
+
+	return resp.CustomResponse(http.StatusCreated, "success", result)
 }
 
 func (u *usecase) ListCategory(user *userModel.User) (resp common.Response) {

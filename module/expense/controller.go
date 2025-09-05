@@ -14,6 +14,7 @@ import (
 
 type Controller interface {
 	Add(ctx *fiber.Ctx) error
+	List(ctx *fiber.Ctx) error
 	ListCategory(ctx *fiber.Ctx) error
 }
 
@@ -53,6 +54,24 @@ func (c *controller) Add(ctx *fiber.Ctx) error {
 	}
 
 	response = c.usecase.Add(&user, &reqBody)
+
+	return ctx.Status(response.Status.Code).JSON(response)
+}
+
+func (c *controller) List(ctx *fiber.Ctx) error {
+	var (
+		response common.Response
+		reqBody  model.ListRequest
+
+		user = ctx.Locals("user").(userModel.User)
+	)
+
+	if err := ctx.QueryParser(&reqBody); err != nil {
+		c.log.Errorf("error parsing query param: %s", err.Error())
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.CustomResponse(http.StatusBadRequest, constant.ParseQueryParamErr, nil))
+	}
+
+	response = c.usecase.List(&user, &reqBody)
 
 	return ctx.Status(response.Status.Code).JSON(response)
 }

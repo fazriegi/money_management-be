@@ -11,6 +11,7 @@ import (
 
 type Repository interface {
 	Insert(data *model.Expense, tx *sqlx.Tx) error
+	List(req *model.ListRequest, db *sqlx.DB) (result []model.Expense, err error)
 	ListCategory(userID uint, db *sqlx.DB) (result []model.ExpenseCategory, err error)
 }
 
@@ -36,6 +37,58 @@ func (r *repository) Insert(data *model.Expense, tx *sqlx.Tx) error {
 
 	return nil
 
+}
+
+func (r *repository) List(req *model.ListRequest, db *sqlx.DB) (result []model.Expense, err error) {
+	dialect := libs.GetDialect()
+
+	if req.Sort == nil {
+		sort := "date desc"
+		req.Sort = &sort
+	}
+
+	dataset := dialect.
+		From("expense").
+		Join(goqu.T("user_expense_category").As("uec"), goqu.On(
+			goqu.I("uec.id").Eq(goqu.I("expense.category_id")),
+			goqu.I("uec.user_id").Eq(goqu.I("expense.user_id")),
+		)).
+		Select(
+			goqu.I("expense.id"),
+			goqu.I("expense.category_id"),
+			goqu.I("uec.name").As("category"),
+			goqu.I("expense.date"),
+			goqu.I("expense.value"),
+			goqu.I("expense.notes"),
+		).
+		Where(
+			goqu.I("expense.user_id").Eq(req.UserId),
+		)
+
+	if req.Keyword != "" {
+		dataset = dataset.Where(goqu.I("uec.name").Eq(req.Keyword))
+	}
+
+	dataset = libs.PaginationRequest(dataset, req.PaginationRequest)
+
+	sql, val, err := dataset.ToSQL()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build SQL query: %w", err)
+	}
+
+	row, err := db.Queryx(sql, val...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+	defer row.Close()
+
+	result = make([]model.Expense, 0)
+	err = libs.ScanRowsIntoStructs(row, &result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan rows into structs: %w", err)
+	}
+
+	return
 }
 
 func (r *repository) ListCategory(userID uint, db *sqlx.DB) (result []model.ExpenseCategory, err error) {

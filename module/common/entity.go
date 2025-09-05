@@ -49,11 +49,4 @@ func (s Response) CustomResponse(code int, message string, data any) Response {
 		},
 		Data: data,
 	}
-
-	// status := s{
-	// 	Code:      code,
-	// 	Message:   message,
-	// 	Status:    statuses[code],
-	// 	IsSuccess: code >= 200 && code <= 299,
-	// }
 }
