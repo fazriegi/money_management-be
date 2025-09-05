@@ -7,6 +7,7 @@ import (
 
 	"github.com/fazriegi/money_management-be/libs"
 	"github.com/fazriegi/money_management-be/model"
+	userModel "github.com/fazriegi/money_management-be/module/master/user/model"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -35,7 +36,7 @@ func Authentication(jwt *libs.JWT) func(ctx *fiber.Ctx) error {
 
 		jsonData, _ := json.Marshal(verifiedToken)
 
-		var user model.User
+		var user userModel.User
 		json.Unmarshal(jsonData, &user)
 
 		ctx.Locals("user", user)

@@ -44,7 +44,7 @@ func (u *IncomeUsecase) GetList(user *model.User, req *model.GetIncomeRequest) (
 
 	respData := make(model.GetIncomeResponse, len(listData))
 	for i, data := range listData {
-		decValue, err := libs.Decrypt(data.Value.(string))
+		decValue, err := libs.Decrypt("", data.Value.(string))
 		if err != nil {
 			u.log.Errorf("error decrypting value: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
@@ -79,7 +79,7 @@ func (u *IncomeUsecase) Update(user *model.User, req *model.UpdateIncomeRequest)
 
 	insertData := make([]model.Income, 0)
 	for _, data := range req.Data {
-		encValue, err := libs.Encrypt(fmt.Sprintf("%0.f", data.Value))
+		encValue, err := libs.Encrypt("", fmt.Sprintf("%0.f", data.Value))
 		if err != nil {
 			u.log.Errorf("error encrypting value: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)

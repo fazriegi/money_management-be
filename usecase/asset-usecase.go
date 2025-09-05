@@ -44,7 +44,7 @@ func (u *AssetUsecase) GetAssets(user *model.User, req *model.GetAssetRequest) (
 
 	respData := make([]model.AssetResponse, len(listData))
 	for i, data := range listData {
-		decAmount, err := libs.Decrypt(data.Amount)
+		decAmount, err := libs.Decrypt("", data.Amount)
 		if err != nil {
 			u.log.Errorf("error decrypting amount: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
@@ -53,7 +53,7 @@ func (u *AssetUsecase) GetAssets(user *model.User, req *model.GetAssetRequest) (
 
 		amount, _ := strconv.Atoi(decAmount)
 
-		decValue, err := libs.Decrypt(data.Value)
+		decValue, err := libs.Decrypt("", data.Value)
 		if err != nil {
 			u.log.Errorf("error decrypting value: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
@@ -89,14 +89,14 @@ func (u *AssetUsecase) Update(user *model.User, req *model.InsertAssetRequest) (
 
 	insertData := make([]model.Asset, 0)
 	for _, data := range req.Data {
-		encAmount, err := libs.Encrypt(fmt.Sprintf("%0.f", data.Amount))
+		encAmount, err := libs.Encrypt("", fmt.Sprintf("%0.f", data.Amount))
 		if err != nil {
 			u.log.Errorf("error encrypting amount: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
 
-		encValue, err := libs.Encrypt(fmt.Sprintf("%0.f", data.Value))
+		encValue, err := libs.Encrypt("", fmt.Sprintf("%0.f", data.Value))
 		if err != nil {
 			u.log.Errorf("error encrypting value: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)

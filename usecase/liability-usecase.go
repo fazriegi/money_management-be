@@ -45,14 +45,14 @@ func (u *LiabilityUsecase) GetList(user *model.User, req *model.GetLiabilityRequ
 
 	respData := make(model.GetLiabilityResponse, len(listData))
 	for i, data := range listData {
-		decValue, err := libs.Decrypt(data.Value)
+		decValue, err := libs.Decrypt("", data.Value)
 		if err != nil {
 			u.log.Errorf("error decrypting value: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
 
-		decInstallment, err := libs.Decrypt(data.Installment)
+		decInstallment, err := libs.Decrypt("", data.Installment)
 		if err != nil {
 			u.log.Errorf("error decrypting installment: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
@@ -90,14 +90,14 @@ func (u *LiabilityUsecase) Update(user *model.User, req *model.UpdateLiabilityRe
 	keepID := []uint{}
 	insertData := make([]model.Liability, 0)
 	for _, data := range req.Data {
-		encValue, err := libs.Encrypt(fmt.Sprintf("%0.f", data.Value))
+		encValue, err := libs.Encrypt("", fmt.Sprintf("%0.f", data.Value))
 		if err != nil {
 			u.log.Errorf("error encrypting value: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
 			return
 		}
 
-		encInstallment, err := libs.Encrypt(fmt.Sprintf("%0.f", data.Installment))
+		encInstallment, err := libs.Encrypt("", fmt.Sprintf("%0.f", data.Installment))
 		if err != nil {
 			u.log.Errorf("error encrypting installment: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)

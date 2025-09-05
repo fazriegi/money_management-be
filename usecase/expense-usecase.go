@@ -46,7 +46,7 @@ func (u *ExpenseUsecase) GetList(user *model.User, req *model.GetExpenseRequest)
 
 	respData := make(model.GetExpenseResponse, len(listData))
 	for i, data := range listData {
-		decValue, err := libs.Decrypt(data.Value.(string))
+		decValue, err := libs.Decrypt("", data.Value.(string))
 		if err != nil {
 			u.log.Errorf("error decrypting value: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
@@ -92,7 +92,7 @@ func (u *ExpenseUsecase) Update(user *model.User, req *model.UpdateExpenseReques
 	// return liability value
 	for _, curData := range existingData {
 		if curData.LiabilityID != nil {
-			expensesDecValue, err := libs.Decrypt(string(curData.Value.(string)))
+			expensesDecValue, err := libs.Decrypt("", string(curData.Value.(string)))
 			if err != nil {
 				u.log.Errorf("error decrypting value: %s", err.Error())
 				resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
@@ -116,7 +116,7 @@ func (u *ExpenseUsecase) Update(user *model.User, req *model.UpdateExpenseReques
 					return
 				}
 
-				liabilityDecValue, err := libs.Decrypt(string(liability.Value))
+				liabilityDecValue, err := libs.Decrypt("", string(liability.Value))
 				if err != nil {
 					u.log.Errorf("error decrypting value: %s", err.Error())
 					resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
@@ -145,7 +145,7 @@ func (u *ExpenseUsecase) Update(user *model.User, req *model.UpdateExpenseReques
 
 	insertData := make([]model.Expense, 0)
 	for _, data := range req.Data {
-		encValue, err := libs.Encrypt(fmt.Sprintf("%0.f", data.Value))
+		encValue, err := libs.Encrypt("", fmt.Sprintf("%0.f", data.Value))
 		if err != nil {
 			u.log.Errorf("error encrypting value: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
@@ -172,7 +172,7 @@ func (u *ExpenseUsecase) Update(user *model.User, req *model.UpdateExpenseReques
 					return
 				}
 
-				liabilityDecValue, err := libs.Decrypt(string(liability.Value))
+				liabilityDecValue, err := libs.Decrypt("", string(liability.Value))
 				if err != nil {
 					u.log.Errorf("error decrypting value: %s", err.Error())
 					resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
@@ -195,7 +195,7 @@ func (u *ExpenseUsecase) Update(user *model.User, req *model.UpdateExpenseReques
 	for id, val := range liabilityMap {
 		refetchLiability = true
 
-		encValue, err := libs.Encrypt(fmt.Sprintf("%0.f", val))
+		encValue, err := libs.Encrypt("", fmt.Sprintf("%0.f", val))
 		if err != nil {
 			u.log.Errorf("error encrypting value: %s", err.Error())
 			resp.Status = libs.CustomResponse(http.StatusInternalServerError, constant.ServerErr)
