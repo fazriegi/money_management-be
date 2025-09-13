@@ -82,7 +82,7 @@ func (r *repository) List(req *model.ListRequest, db *sqlx.DB) (result []model.G
 	})
 
 	g.Go(func() error {
-		dataset = libs.PaginationRequest(dataset, req.PaginationRequest)
+		dataset := libs.PaginationRequest(dataset, req.PaginationRequest)
 
 		sql, val, err := dataset.ToSQL()
 		if err != nil {
