@@ -2,6 +2,8 @@ package cashflow
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
@@ -72,7 +74,7 @@ func (r *repository) List(req *model.ListRequest, db *sqlx.DB) (result []model.G
 			return fmt.Errorf("failed to build count SQL: %w", err)
 		}
 
-		if err := db.Get(&total, countSQL, countVals...); err != nil {
+		if err := db.Get(&total, countSQL, countVals...); err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("failed to query count: %w", err)
 		}
 
