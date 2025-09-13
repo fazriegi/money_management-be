@@ -39,8 +39,10 @@ type AddRequest struct {
 
 type ListRequest struct {
 	common.PaginationRequest
-	Keyword string `json:"keyword"`
-	UserId  uint
+	Keyword   string `query:"keyword"`
+	StartDate string `query:"start_date"`
+	EndDate   string `query:"end_date"`
+	UserId    uint
 }
 
 type UpdateRequest struct {

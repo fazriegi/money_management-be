@@ -19,9 +19,11 @@ func cashflowRoute(app *fiber.App, jwt *libs.JWT) {
 	log := config.GetLogger()
 	expenseRepo := expense.NewRepository()
 	incomeRepo := income.NewRepository()
+	incomeUsecase := income.NewUsecase(log, incomeRepo)
+	expenseUsecase := expense.NewUsecase(log, expenseRepo)
 
 	repo := NewRepository(expenseRepo, incomeRepo)
-	usecase := NewUsecase(log, repo)
+	usecase := NewUsecase(log, repo, incomeUsecase, expenseUsecase)
 	controller := NewController(log, usecase)
 
 	route := app.Group("/cashflow")
