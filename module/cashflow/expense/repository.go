@@ -46,30 +46,17 @@ func (r *repository) Insert(data *model.Expense, tx *sqlx.Tx) error {
 }
 
 func (r *repository) List(req *model.ListRequest, db *sqlx.DB) (result []model.GetExpense, err error) {
-	dialect := libs.GetDialect()
-
 	if req.Sort == nil {
 		sort := "date desc"
 		req.Sort = &sort
 	}
 
-	dataset := dialect.
-		From("expense").
-		Join(goqu.T("user_expense_category").As("uec"), goqu.On(
-			goqu.I("uec.id").Eq(goqu.I("expense.category_id")),
-			goqu.I("uec.user_id").Eq(goqu.I("expense.user_id")),
-		)).
-		Select(
-			goqu.I("expense.id"),
-			goqu.I("expense.category_id"),
-			goqu.I("uec.name").As("category"),
-			goqu.I("expense.date"),
-			goqu.I("expense.value"),
-			goqu.I("expense.notes"),
-		).
-		Where(
-			goqu.I("expense.user_id").Eq(req.UserId),
-		)
+	listFilter := cashflowModel.ListFilter{
+		UserId:    req.UserId,
+		StartDate: req.StartDate,
+		EndDate:   req.EndDate,
+	}
+	dataset := r.CreateListQuery(&listFilter)
 
 	if req.Keyword != "" {
 		dataset = dataset.Where(goqu.I("uec.name").ILike("%" + req.Keyword + "%"))

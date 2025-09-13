@@ -71,30 +71,17 @@ func (r *repository) ListCategory(userID uint, db *sqlx.DB) (result []model.Inco
 }
 
 func (r *repository) List(req *model.ListRequest, db *sqlx.DB) (result []model.GetIncome, err error) {
-	dialect := libs.GetDialect()
-
 	if req.Sort == nil {
 		sort := "date desc"
 		req.Sort = &sort
 	}
 
-	dataset := dialect.
-		From("income").
-		Join(goqu.T("user_income_category").As("uec"), goqu.On(
-			goqu.I("uec.id").Eq(goqu.I("income.category_id")),
-			goqu.I("uec.user_id").Eq(goqu.I("income.user_id")),
-		)).
-		Select(
-			goqu.I("income.id"),
-			goqu.I("income.category_id"),
-			goqu.I("uec.name").As("category"),
-			goqu.I("income.date"),
-			goqu.I("income.value"),
-			goqu.I("income.notes"),
-		).
-		Where(
-			goqu.I("income.user_id").Eq(req.UserId),
-		)
+	listFilter := cashflowModel.ListFilter{
+		UserId:    req.UserId,
+		StartDate: req.StartDate,
+		EndDate:   req.EndDate,
+	}
+	dataset := r.CreateListQuery(&listFilter)
 
 	if req.Keyword != "" {
 		dataset = dataset.Where(goqu.I("uec.name").ILike("%" + req.Keyword + "%"))
