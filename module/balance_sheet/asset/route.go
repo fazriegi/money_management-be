@@ -1,0 +1,22 @@
+package asset
+
+import (
+	"github.com/fazriegi/money_management-be/config"
+	"github.com/fazriegi/money_management-be/libs"
+	"github.com/fazriegi/money_management-be/middleware"
+	"github.com/gofiber/fiber/v2"
+)
+
+func NewRoute(app *fiber.App, jwt *libs.JWT) {
+	log := config.GetLogger()
+	repo := NewRepository()
+	usecase := NewUsecase(log, repo)
+	controller := NewController(log, usecase)
+
+	route := app.Group("/asset")
+	route.Post("/", middleware.Authentication(jwt), controller.Add)
+	route.Get("/", middleware.Authentication(jwt), controller.List)
+	route.Put("/:id", middleware.Authentication(jwt), controller.Update)
+	route.Delete("/:id", middleware.Authentication(jwt), controller.Delete)
+	route.Get("/category", middleware.Authentication(jwt), controller.ListCategory)
+}

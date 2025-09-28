@@ -10,12 +10,12 @@ CREATE INDEX idx_asset_cat_user_id ON asset_category(user_id);
 
 CREATE TABLE asset (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
     category_id BIGINT NOT NULL,
-    date DATETIME NOT NULL,
     value VARCHAR(100) NOT NULL,
+    notes VARCHAR(255) NOT NULL,
     amount VARCHAR(100) NOT NULL,
     user_id BIGINT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_asset_user FOREIGN KEY (user_id) REFERENCES user(id)
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_asset_category FOREIGN KEY (category_id) REFERENCES asset_category(id)
